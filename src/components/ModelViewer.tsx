@@ -44,7 +44,7 @@ function SolarSystemGLTF() {
   return (
     <>
       <Stars radius={150} depth={60} count={6000} factor={4} saturation={0} fade speed={0.5} />
-      <group ref={group} scale={0.006}>
+      <group ref={group} scale={0.012}>
         <primitive object={scene} />
       </group>
     </>
