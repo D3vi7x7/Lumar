@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { Home } from './pages/Home';
-import { Subject } from './pages/Subject';
-import { TopicPage } from './pages/TopicPage';
+import { Subject } from './pages/Subject.tsx';
+import { TopicPage } from './pages/TopicPage.tsx';
 
 function App() {
   return (
@@ -15,7 +15,7 @@ function App() {
           <Link to="/subject/chemistry" style={{ transition: 'color 0.2s', textDecoration: 'none' }}>Chemistry</Link>
         </div>
       </nav>
-      
+
       <main style={{ minHeight: '100vh', paddingTop: '80px', position: 'relative' }}>
         <Routes>
           <Route path="/" element={<Home />} />
