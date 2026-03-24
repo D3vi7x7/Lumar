@@ -2,13 +2,14 @@ import React, { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Stars, Text } from '@react-three/drei';
 import { XR, createXRStore } from '@react-three/xr';
+import { Mesh, Group } from 'three';
 
 const store = createXRStore();
 
 const AtomModel = () => {
-  const electron1 = useRef<THREE.Mesh>(null);
-  const electron2 = useRef<THREE.Mesh>(null);
-  const electron3 = useRef<THREE.Mesh>(null);
+  const electron1 = useRef<Mesh>(null);
+  const electron2 = useRef<Mesh>(null);
+  const electron3 = useRef<Mesh>(null);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime() * 3;
@@ -31,7 +32,7 @@ const AtomModel = () => {
 };
 
 const SolarSystemModel = () => {
-  const group = useRef<THREE.Group>(null);
+  const group = useRef<Group>(null);
   useFrame(() => {
     if (group.current) group.current.rotation.y += 0.005;
   });
@@ -86,7 +87,7 @@ const WaterMoleculeModel = () => {
 };
 
 const MagnetModel = () => {
-  const group = useRef<THREE.Group>(null);
+  const group = useRef<Group>(null);
   useFrame(() => {
     if (group.current) {
         group.current.rotation.x += 0.005;
