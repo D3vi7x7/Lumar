@@ -1,6 +1,6 @@
-import React, { useRef } from 'react';
+import React, { useRef, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Stars, Text } from '@react-three/drei';
+import { OrbitControls, Stars, Text, useGLTF, useAnimations } from '@react-three/drei';
 import { XR, createXRStore } from '@react-three/xr';
 import { Mesh, Group } from 'three';
 
@@ -31,38 +31,34 @@ const AtomModel = () => {
   );
 };
 
-const SolarSystemModel = () => {
+function SolarSystemGLTF() {
   const group = useRef<Group>(null);
-  useFrame(() => {
-    if (group.current) group.current.rotation.y += 0.005;
-  });
+  const { scene, animations } = useGLTF('/solar-system/scene.gltf');
+  const { actions } = useAnimations(animations, group);
+
+  React.useEffect(() => {
+    // Play all animations embedded in the GLTF (planet orbits, rotations)
+    Object.values(actions).forEach((action) => action?.play());
+  }, [actions]);
 
   return (
-    <group ref={group} scale={0.6}>
-      <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-      {/* Sun */}
-      <mesh>
-        <sphereGeometry args={[1.5, 32, 32]} />
-        <meshStandardMaterial color="#ffcc00" emissive="#ffa500" emissiveIntensity={0.5} />
-      </mesh>
-      {/* Earth */}
-      <mesh position={[4, 0, 0]}>
-        <sphereGeometry args={[0.4, 32, 32]} />
-        <meshStandardMaterial color="#0047ff" roughness={0.5} />
-      </mesh>
-      {/* Mars */}
-      <mesh position={[6, 0, 0]}>
-        <sphereGeometry args={[0.25, 32, 32]} />
-        <meshStandardMaterial color="#ff4500" roughness={0.7} />
-      </mesh>
-      {/* Jupiter */}
-      <mesh position={[8, 0, 2]}>
-        <sphereGeometry args={[0.8, 32, 32]} />
-        <meshStandardMaterial color="#deb887" roughness={0.9} />
-      </mesh>
-    </group>
+    <>
+      <Stars radius={150} depth={60} count={6000} factor={4} saturation={0} fade speed={0.5} />
+      <group ref={group} scale={0.012}>
+        <primitive object={scene} />
+      </group>
+    </>
   );
-};
+}
+
+// Preload for faster initial display
+useGLTF.preload('/solar-system/scene.gltf');
+
+const SolarSystemModel = () => (
+  <Suspense fallback={null}>
+    <SolarSystemGLTF />
+  </Suspense>
+);
 
 const WaterMoleculeModel = () => {
   return (
@@ -122,11 +118,21 @@ export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
         View in AR
       </button>
 
-      <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
+      <Canvas
+        camera={
+          modelType === 'solar-system'
+            ? { position: [0, 0.8, 2], fov: 60 }
+            : { position: [0, 0, 5], fov: 50 }
+        }
+      >
         <XR store={store}>
-            <ambientLight intensity={0.5} />
+            <ambientLight intensity={modelType === 'solar-system' ? 1.2 : 0.5} />
             <pointLight position={[10, 10, 10]} intensity={1.5} />
-            <OrbitControls autoRotate autoRotateSpeed={0.5} enablePan={false} />
+            <OrbitControls
+              autoRotate={modelType !== 'solar-system'}
+              autoRotateSpeed={0.5}
+              enablePan={false}
+            />
             
             {modelType === 'solar-system' && <SolarSystemModel />}
             {modelType === 'atom' && <AtomModel />}
