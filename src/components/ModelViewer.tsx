@@ -19,7 +19,7 @@ const AtomModel = () => {
   });
 
   return (
-    <group scale={0.7} position={[0, 1.0, 0]}>
+    <group scale={0.7}>
       <mesh>
         <sphereGeometry args={[0.5, 32, 32]} />
         <meshStandardMaterial color="#8a2be2" emissive="#4a0e4e" roughness={0.2} metalness={0.8} />
@@ -44,7 +44,7 @@ function SolarSystemGLTF() {
   return (
     <>
       <Stars radius={150} depth={60} count={6000} factor={4} saturation={0} fade speed={0.5} />
-      <group ref={group} scale={0.012} position={[0, 1.0, 0]}>
+      <group ref={group} scale={0.006}>
         <primitive object={scene} />
       </group>
     </>
@@ -62,7 +62,7 @@ const SolarSystemModel = () => (
 
 const WaterMoleculeModel = () => {
   return (
-    <group scale={1.2} position={[0, 1.0, 0]}>
+    <group scale={1.2}>
       {/* Oxygen */}
       <mesh position={[0, 0, 0]}>
         <sphereGeometry args={[0.6, 32, 32]} />
@@ -91,7 +91,7 @@ const MagnetModel = () => {
     }
   });
   return (
-    <group ref={group} scale={0.8} position={[0, 1.0, 0]}>
+    <group ref={group} scale={0.8}>
       <mesh position={[0, 1.25, 0]}>
         <boxGeometry args={[1, 2.5, 1]} />
         <meshStandardMaterial color="#ff0000" />
