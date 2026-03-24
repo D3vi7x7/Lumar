@@ -14,8 +14,8 @@ const AtomModel = () => {
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime() * 3;
     if (electron1.current) electron1.current.position.set(Math.sin(t) * 2.5, Math.cos(t) * 2.5, 0);
-    if (electron2.current) electron2.current.position.set(Math.sin(t+2) * 2.5, 0, Math.cos(t+2) * 2.5);
-    if (electron3.current) electron3.current.position.set(0, Math.sin(t+4) * 2.5, Math.cos(t+4) * 2.5);
+    if (electron2.current) electron2.current.position.set(Math.sin(t + 2) * 2.5, 0, Math.cos(t + 2) * 2.5);
+    if (electron3.current) electron3.current.position.set(0, Math.sin(t + 4) * 2.5, Math.cos(t + 4) * 2.5);
   });
 
   return (
@@ -86,8 +86,8 @@ const MagnetModel = () => {
   const group = useRef<Group>(null);
   useFrame(() => {
     if (group.current) {
-        group.current.rotation.x += 0.005;
-        group.current.rotation.y += 0.005;
+      group.current.rotation.x += 0.005;
+      group.current.rotation.y += 0.005;
     }
   });
   return (
@@ -109,7 +109,7 @@ const MagnetModel = () => {
 export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1px solid rgba(255, 255, 255, 0.1)', background: '#0a0a0a' }}>
-      <button 
+      <button
         style={{ position: 'absolute', bottom: '20px', right: '20px', zIndex: 10, padding: '12px 24px', borderRadius: 'var(--radius-full)', background: 'var(--gradient-primary)', border: 'none', color: 'white', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(0, 240, 255, 0.3)', transition: 'transform 0.2s' }}
         onClick={() => store.enterAR()}
         onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
@@ -121,23 +121,23 @@ export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
       <Canvas
         camera={
           modelType === 'solar-system'
-            ? { position: [0, 0.8, 2], fov: 60 }
-            : { position: [0, 0, 5], fov: 50 }
+            ? { position: [0, 10, 2], fov: 60 }
+            : { position: [0, 10, 5], fov: 50 }
         }
       >
         <XR store={store}>
-            <ambientLight intensity={modelType === 'solar-system' ? 1.2 : 0.5} />
-            <pointLight position={[10, 10, 10]} intensity={1.5} />
-            <OrbitControls
-              autoRotate={modelType !== 'solar-system'}
-              autoRotateSpeed={0.5}
-              enablePan={false}
-            />
-            
-            {modelType === 'solar-system' && <SolarSystemModel />}
-            {modelType === 'atom' && <AtomModel />}
-            {modelType === 'h2o' && <WaterMoleculeModel />}
-            {modelType === 'magnet' && <MagnetModel />}
+          <ambientLight intensity={modelType === 'solar-system' ? 1.2 : 0.5} />
+          <pointLight position={[10, 10, 10]} intensity={1.5} />
+          <OrbitControls
+            autoRotate={modelType !== 'solar-system'}
+            autoRotateSpeed={0.5}
+            enablePan={false}
+          />
+
+          {modelType === 'solar-system' && <SolarSystemModel />}
+          {modelType === 'atom' && <AtomModel />}
+          {modelType === 'h2o' && <WaterMoleculeModel />}
+          {modelType === 'magnet' && <MagnetModel />}
         </XR>
       </Canvas>
     </div>
