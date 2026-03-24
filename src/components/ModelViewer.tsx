@@ -121,8 +121,8 @@ export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
       <Canvas
         camera={
           modelType === 'solar-system'
-            ? { position: [0, 10, 2], fov: 60 }
-            : { position: [0, 10, 5], fov: 50 }
+            ? { position: [0, 0.8, 2], fov: 60 }
+            : { position: [0, 0, 5], fov: 50 }
         }
       >
         <XR store={store}>
