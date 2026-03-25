@@ -97,7 +97,7 @@ function MagnetGLTF() {
   });
 
   return (
-    <group ref={group} scale={0.08} position={[0, 1.0, 0]}>
+    <group ref={group} scale={0.25} position={[0, 1.0, 0]}>
       <primitive object={scene} />
     </group>
   );
