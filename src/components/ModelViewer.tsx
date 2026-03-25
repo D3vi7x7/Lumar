@@ -1,6 +1,6 @@
 import React, { useRef, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Stars, Text, useGLTF, useAnimations } from '@react-three/drei';
+import { OrbitControls, Stars, useGLTF, useAnimations } from '@react-three/drei';
 import { XR, createXRStore } from '@react-three/xr';
 import { Mesh, Group } from 'three';
 
@@ -82,29 +82,34 @@ const WaterMoleculeModel = () => {
   );
 };
 
-const MagnetModel = () => {
+function MagnetGLTF() {
   const group = useRef<Group>(null);
+  const { scene, animations } = useGLTF('/magnet/scene.gltf');
+  const { actions } = useAnimations(animations, group);
+
+  React.useEffect(() => {
+    Object.values(actions).forEach((action) => action?.play());
+  }, [actions]);
+
+  // Gentle slow rotation so the solenoid field lines are visible from all angles
   useFrame(() => {
-    if (group.current) {
-      group.current.rotation.x += 0.005;
-      group.current.rotation.y += 0.005;
-    }
+    if (group.current) group.current.rotation.y += 0.003;
   });
+
   return (
-    <group ref={group} scale={0.8} position={[0, 1.0, 0]}>
-      <mesh position={[0, 1.25, 0]}>
-        <boxGeometry args={[1, 2.5, 1]} />
-        <meshStandardMaterial color="#ff0000" />
-      </mesh>
-      <mesh position={[0, -1.25, 0]}>
-        <boxGeometry args={[1, 2.5, 1]} />
-        <meshStandardMaterial color="#0000ff" />
-      </mesh>
-      <Text position={[0, 2, 0.51]} fontSize={0.6} color="white">N</Text>
-      <Text position={[0, -2, 0.51]} fontSize={0.6} color="white">S</Text>
+    <group ref={group} scale={0.08} position={[0, 1.0, 0]}>
+      <primitive object={scene} />
     </group>
   );
-};
+}
+
+useGLTF.preload('/magnet/scene.gltf');
+
+const MagnetModel = () => (
+  <Suspense fallback={null}>
+    <MagnetGLTF />
+  </Suspense>
+);
 
 export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
   return (

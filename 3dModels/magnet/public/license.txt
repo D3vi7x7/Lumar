@@ -1,0 +1,11 @@
+Model Information:
+* title:	Magnetic Field of Solenoid by yuyalyj
+* source:	https://sketchfab.com/3d-models/magnetic-field-of-solenoid-by-yuyalyj-70e36fd97e234c4a8f326e62191c02c2
+* author:	yuyalyj (https://sketchfab.com/yuyalyj)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Magnetic Field of Solenoid by yuyalyj" (https://sketchfab.com/3d-models/magnetic-field-of-solenoid-by-yuyalyj-70e36fd97e234c4a8f326e62191c02c2) by yuyalyj (https://sketchfab.com/yuyalyj) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
