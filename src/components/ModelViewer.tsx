@@ -143,7 +143,7 @@ function SolarSystemGLTF() {
   return (
     <>
       <Stars radius={150} depth={60} count={6000} factor={4} saturation={0} fade speed={0.5} />
-      <group ref={group} scale={0.012}>
+      <group ref={group} scale={0.020}>
         <primitive object={scene} />
       </group>
     </>
@@ -190,7 +190,7 @@ function MagnetGLTF() {
   });
 
   return (
-    <group ref={group} scale={15}>
+    <group ref={group} scale={10}>
       <primitive object={scene} />
     </group>
   );
@@ -245,8 +245,8 @@ export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
           isSolar
             ? { position: [0, 0.8, 2], fov: 60, near: 0.01 }
             : isMagnet
-            ? { position: [0, 1, 3], fov: 60, near: 0.01 }
-            : { position: [0, 0, 5], fov: 50, near: 0.01 }
+              ? { position: [0, 1, 3], fov: 60, near: 0.01 }
+              : { position: [0, 0, 5], fov: 50, near: 0.01 }
         }
       >
         <XR store={store}>
