@@ -1,7 +1,7 @@
 import React, { useRef, Suspense, useState, useCallback } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Stars, useGLTF, useAnimations, Ring } from '@react-three/drei';
-import { XR, createXRStore, useXRHitTest, IfInSessionMode } from '@react-three/xr';
+import { XR, createXRStore, useXRHitTest, IfInSessionMode, useXR } from '@react-three/xr';
 import { Group, Matrix4, Vector3, Quaternion, Euler } from 'three';
 
 const store = createXRStore();
@@ -62,25 +62,24 @@ function ARPlacedModel({ children }: { children: React.ReactNode }) {
   const placedQuat = useRef(new Quaternion());
   const reticlePos = useRef(new Vector3());
   const reticleQuat = useRef(new Quaternion());
-  const { gl } = useThree();
 
   const handlePositionUpdate = useCallback((pos: Vector3, quat: Quaternion) => {
     reticlePos.current.copy(pos);
     reticleQuat.current.copy(quat);
   }, []);
 
-  // Place on tap
-  const handleSelect = useCallback(() => {
-    placedPos.current.copy(reticlePos.current);
-    placedQuat.current.copy(reticleQuat.current);
-    setPlaced(true);
-  }, []);
-
+  // Use the native XR session 'select' event — DOM events don't fire in WebXR
+  const session = useXR((s) => s.session);
   React.useEffect(() => {
-    const canvas = gl.domElement;
-    canvas.addEventListener('pointerdown', handleSelect);
-    return () => canvas.removeEventListener('pointerdown', handleSelect);
-  }, [gl, handleSelect]);
+    if (!session) return;
+    const onSelect = () => {
+      placedPos.current.copy(reticlePos.current);
+      placedQuat.current.copy(reticleQuat.current);
+      setPlaced(true);
+    };
+    session.addEventListener('select', onSelect);
+    return () => session.removeEventListener('select', onSelect);
+  }, [session]);
 
   useFrame(() => {
     if (!groupRef.current) return;
@@ -240,6 +239,8 @@ export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
       </div>
 
       <Canvas
+        gl={{ alpha: true, antialias: true }}
+        style={{ background: 'transparent' }}
         camera={
           isSolar
             ? { position: [0, 0.8, 2], fov: 60, near: 0.01 }
