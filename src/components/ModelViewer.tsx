@@ -97,7 +97,7 @@ function MagnetGLTF() {
   });
 
   return (
-    <group ref={group} scale={0.25} position={[0, 1.0, 0]}>
+    <group ref={group} scale={15} position={[0, -0.5, 0]}>
       <primitive object={scene} />
     </group>
   );
@@ -126,17 +126,21 @@ export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
       <Canvas
         camera={
           modelType === 'solar-system'
-            ? { position: [0, 0.8, 2], fov: 60 }
-            : { position: [0, 0, 5], fov: 50 }
+            ? { position: [0, 0.8, 2], fov: 60, near: 0.01 }
+            : modelType === 'magnet'
+              ? { position: [0, 1, 3], fov: 60, near: 0.01 }
+              : { position: [0, 0, 5], fov: 50, near: 0.01 }
         }
       >
         <XR store={store}>
           <ambientLight intensity={modelType === 'solar-system' ? 1.2 : 0.5} />
           <pointLight position={[10, 10, 10]} intensity={1.5} />
           <OrbitControls
-            autoRotate={modelType !== 'solar-system'}
+            autoRotate={modelType !== 'solar-system' && modelType !== 'magnet'}
             autoRotateSpeed={0.5}
             enablePan={false}
+            minDistance={0.5}
+            maxDistance={20}
           />
 
           {modelType === 'solar-system' && <SolarSystemModel />}
