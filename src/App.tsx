@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { Home } from './pages/Home';
 import { Subject } from './pages/Subject.tsx';
 import { TopicPage } from './pages/TopicPage.tsx';
+import { SubTopicPage } from './pages/SubTopicPage.tsx';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/subject/:subjectId" element={<Subject />} />
           <Route path="/topic/:subjectId/:topicId" element={<TopicPage />} />
+          <Route path="/subtopic/:subjectId/:topicId/:subTopicId" element={<SubTopicPage />} />
         </Routes>
       </main>
     </Router>

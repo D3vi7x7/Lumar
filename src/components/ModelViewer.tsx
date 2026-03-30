@@ -1,8 +1,8 @@
-import React, { useRef, Suspense, useState, useCallback } from 'react';
+import React, { useRef, Suspense, useState, useCallback, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Stars, useGLTF, useAnimations, Ring } from '@react-three/drei';
 import { XR, createXRStore, useXRHitTest, IfInSessionMode, useXR } from '@react-three/xr';
-import { Group, Matrix4, Vector3, Quaternion, Euler } from 'three';
+import { Group, Matrix4, Vector3, Quaternion, Euler, Box3 } from 'three';
 
 const store = createXRStore();
 
@@ -203,6 +203,71 @@ const MagnetModel = () => (
   </Suspense>
 );
 
+// ─── Auto-fit GLTF factory ────────────────────────────────────────────────────
+// Normalises every model to `targetSize` units and centres it at the origin.
+// No manual scale tuning needed — bounding box computed at load time.
+function makeGLTF(path: string, rotationSpeed = 0.003, targetSize = 2): React.FC {
+  function GLTFModel() {
+    const { scene, animations } = useGLTF(path);
+    const pivotRef = useRef<Group>(null);       // outer: rotation only at [0,0,0]
+    const { actions } = useAnimations(animations, pivotRef);
+
+    // Compute normalised scale + centre offset once per scene load.
+    // updateWorldMatrix ensures all nested transforms are baked before Box3 measures.
+    const { scale, offset } = useMemo(() => {
+      scene.updateWorldMatrix(true, true);
+      const box = new Box3().setFromObject(scene);
+      const size   = new Vector3();
+      const center = new Vector3();
+      box.getSize(size);
+      box.getCenter(center);
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const sc = maxDim > 0 ? targetSize / maxDim : 1;
+      // offset keeps the geometric centre locked to world origin:
+      //   inner_position + sc * scene_center = 0  →  inner_position = -sc * center
+      return { scale: sc, offset: new Vector3(-sc * center.x, -sc * center.y, -sc * center.z) };
+    }, [scene]);
+
+    React.useEffect(() => {
+      Object.values(actions).forEach((a) => a?.play());
+    }, [actions]);
+
+    // Rotate the PIVOT (outer group) — inner geometry stays centred at its origin
+    useFrame(() => {
+      if (pivotRef.current) pivotRef.current.rotation.y += rotationSpeed;
+    });
+
+    return (
+      // Outer: pure rotation pivot at world origin
+      <group ref={pivotRef}>
+        {/* Inner: scale + centering offset — no rotation here */}
+        <group scale={scale} position={[offset.x, offset.y, offset.z]}>
+          <primitive object={scene} />
+        </group>
+      </group>
+    );
+  }
+  return () => (
+    <Suspense fallback={null}>
+      <GLTFModel />
+    </Suspense>
+  );
+}
+
+
+// ─── Magnetic & non-magnetic object models (scale auto-fitted via bounding box) ───
+const NailsModel      = makeGLTF('/nails/scene.gltf');
+const TmtBarModel     = makeGLTF('/tmtBar/scene.gltf');
+const EraserModel     = makeGLTF('/eraser/scene.gltf');
+const RubberDuckModel = makeGLTF('/rubberDuck/scene.gltf');
+const WoodModel       = makeGLTF('/wood/scene.gltf');
+
+useGLTF.preload('/nails/scene.gltf');
+useGLTF.preload('/tmtBar/scene.gltf');
+useGLTF.preload('/eraser/scene.gltf');
+useGLTF.preload('/rubberDuck/scene.gltf');
+useGLTF.preload('/wood/scene.gltf');
+
 // ─── Helper: y-offset for non-AR display ─────────────────────────────────────
 function yOffset(modelType: string) {
   return modelType === 'solar-system' ? 0 : 1.0;
@@ -214,6 +279,11 @@ function SceneModel({ modelType }: { modelType: string }) {
   if (modelType === 'atom') return <AtomModel />;
   if (modelType === 'h2o') return <WaterMoleculeModel />;
   if (modelType === 'magnet') return <MagnetModel />;
+  if (modelType === 'nails') return <NailsModel />;
+  if (modelType === 'tmtBar') return <TmtBarModel />;
+  if (modelType === 'eraser') return <EraserModel />;
+  if (modelType === 'rubberDuck') return <RubberDuckModel />;
+  if (modelType === 'wood') return <WoodModel />;
   return null;
 }
 
@@ -250,8 +320,21 @@ export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
         }
       >
         <XR store={store}>
-          <ambientLight intensity={isSolar ? 1.2 : 0.6} />
-          <pointLight position={[10, 10, 10]} intensity={1.5} />
+          {/* ── Lighting ── */}
+          {isSolar ? (
+            <ambientLight intensity={1.4} />
+          ) : (
+            <>
+              {/* Hemisphere: sky blue top, warm ground bounce */}
+              <hemisphereLight args={['#c9e8ff', '#ffe8c0', 1.2]} />
+              {/* Key light */}
+              <directionalLight position={[5, 8, 5]}  intensity={2.0} castShadow />
+              {/* Fill light */}
+              <directionalLight position={[-5, 4, -3]} intensity={1.0} />
+              {/* Rim / back light */}
+              <pointLight       position={[0, -3, -5]}  intensity={0.8} color="#a0c8ff" />
+            </>
+          )}
 
           {/* ── Outside AR: fixed position, orbit controls ── */}
           <IfInSessionMode deny="immersive-ar">

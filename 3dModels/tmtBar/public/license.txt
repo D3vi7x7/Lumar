@@ -1,0 +1,11 @@
+Model Information:
+* title:	TMT Bar_ Anil
+* source:	https://sketchfab.com/3d-models/tmt-bar--anil-5e940bd6b61d46aeb22346f1886d0597
+* author:	aniljaco (https://sketchfab.com/aniljaco)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "TMT Bar_ Anil" (https://sketchfab.com/3d-models/tmt-bar--anil-5e940bd6b61d46aeb22346f1886d0597) by aniljaco (https://sketchfab.com/aniljaco) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
