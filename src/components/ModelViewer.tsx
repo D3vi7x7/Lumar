@@ -118,8 +118,10 @@ function ARAnnotatedModel({ modelType, currentSlide, children }: { modelType: st
 
   return (
     <ARPlacedModel>
-      {/* 1. The original physical model */}
-      {children}
+      {/* 1. The original physical model (scaled down for AR table viewing) */}
+      <group scale={0.33}>
+        {children}
+      </group>
 
       {/* 2. Floating Info Card Annotation */}
       {/* Local offset upwards from the tap-to-place origin */}
@@ -382,20 +384,20 @@ export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
       
       {/* Slide Navigation Buttons (Only in AR DOM Overlay) */}
       {isInAR && hasAnnotations && (
-        <div style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 30, display: 'flex', gap: '15px' }}>
+        <div style={{ position: 'absolute', bottom: '10%', left: '50%', transform: 'translateX(-50%)', zIndex: 9999, display: 'flex', gap: '20px', pointerEvents: 'none' }}>
           <button
             onClick={handlePrev}
             disabled={currentSlide === 0}
-            style={{ padding: '12px 20px', borderRadius: '50%', background: currentSlide === 0 ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 'bold', fontSize: '1.2rem', cursor: currentSlide === 0 ? 'not-allowed' : 'pointer', backdropFilter: 'blur(8px)' }}
+            style={{ pointerEvents: 'auto', padding: '14px 24px', borderRadius: '30px', background: currentSlide === 0 ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.25)', border: '1px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 'bold', fontSize: '1.05rem', cursor: currentSlide === 0 ? 'not-allowed' : 'pointer', backdropFilter: 'blur(8px)', boxShadow: '0 4px 15px rgba(0,0,0,0.5)' }}
           >
-            ←
+            ← Previous
           </button>
           <button
             onClick={handleNext}
             disabled={currentSlide === (magneticObj!.annotations!.length - 1)}
-            style={{ padding: '12px 20px', borderRadius: '50%', background: currentSlide === (magneticObj!.annotations!.length - 1) ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 'bold', fontSize: '1.2rem', cursor: currentSlide === (magneticObj!.annotations!.length - 1) ? 'not-allowed' : 'pointer', backdropFilter: 'blur(8px)' }}
+            style={{ pointerEvents: 'auto', padding: '14px 24px', borderRadius: '30px', background: currentSlide === (magneticObj!.annotations!.length - 1) ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.25)', border: '1px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 'bold', fontSize: '1.05rem', cursor: currentSlide === (magneticObj!.annotations!.length - 1) ? 'not-allowed' : 'pointer', backdropFilter: 'blur(8px)', boxShadow: '0 4px 15px rgba(0,0,0,0.5)' }}
           >
-            →
+            Next →
           </button>
         </div>
       )}
