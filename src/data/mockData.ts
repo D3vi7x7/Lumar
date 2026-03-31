@@ -71,34 +71,59 @@ export const magneticObjects = [
     label: 'Iron Nails',
     modelType: 'nails',
     isMagnetic: true,
-    description: 'Iron nails are strongly attracted to magnets. Iron is a ferromagnetic material.'
+    description: 'Iron nails are strongly attracted to magnets. Iron is a ferromagnetic material.',
+    annotations: [
+      'Material Composition: Iron Nails are made of Steel, which is an alloy primarily composed of Iron (Fe).',
+      'Magnetic Properties: Iron is a ferromagnetic material. Its internal magnetic "domains" easily align with external magnets.',
+      'Interaction: Because the domains align so strongly, the nail gets firmly pulled toward the magnet.'
+    ]
   },
   {
     id: 'tmtBar',
     label: 'Steel TMT Bar',
     modelType: 'tmtBar',
     isMagnetic: true,
-    description: 'Steel reinforcement bars are made of iron alloy and are magnetic.'
+    description: 'Steel reinforcement bars are made of iron alloy and are magnetic.',
+    annotations: [
+      'Material Composition: Thermo Mechanically Treated (TMT) bars are made from high-strength structural Steel (Iron & Carbon).',
+      'Magnetic Properties: The high iron content makes the steel ferromagnetic.',
+      'Interaction: You will notice a strong attractive force pulling the heavy bar toward the magnet.'
+    ]
   },
   {
     id: 'eraser',
     label: 'Rubber Eraser',
     modelType: 'eraser',
     isMagnetic: false,
-    description: 'Rubber is a non-magnetic material. A magnet will not attract an eraser.'
+    description: 'Rubber is a non-magnetic material. A magnet will not attract an eraser.',
+    annotations: [
+      'Material Composition: Erasers are made of natural or synthetic rubber (polymers).',
+      'Magnetic Properties: Rubber is non-magnetic. It lacks the special internal electron structure required to interact with magnetic fields.',
+      'Interaction: The magnet has zero physical effect on the eraser.'
+    ]
   },
   {
     id: 'rubberDuck',
     label: 'Rubber Duck',
     modelType: 'rubberDuck',
     isMagnetic: false,
-    description: 'Plastic and rubber toys are non-magnetic — no attraction to a magnet.'
+    description: 'Plastic and rubber toys are non-magnetic — no attraction to a magnet.',
+    annotations: [
+      'Material Composition: Typically made from PVC plastics or synthetic rubbers.',
+      'Magnetic Properties: Plastics are insulators and are completely non-magnetic materials.',
+      'Interaction: Placing a magnet near the duck creates no attractive or repulsive force at all.'
+    ]
   },
   {
     id: 'wood',
     label: 'Wooden Stick',
     modelType: 'wood',
     isMagnetic: false,
-    description: 'Wood is a non-magnetic material and is not attracted by a magnet.'
+    description: 'Wood is a non-magnetic material and is not attracted by a magnet.',
+    annotations: [
+      'Material Composition: Wood is composed of organic cellulose and lignin fibers.',
+      'Magnetic Properties: Organic carbon-based structures like wood are completely non-magnetic (technically diamagnetic, which means they weakly repel, but too weakly to notice!).',
+      'Interaction: The wood remains completely unaffected by the magnet.'
+    ]
   }
 ];

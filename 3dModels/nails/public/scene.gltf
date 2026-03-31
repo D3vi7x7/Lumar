@@ -3,126 +3,166 @@
     {
       "bufferView": 2,
       "componentType": 5126,
-      "count": 1407,
+      "count": 385,
       "max": [
-        1.5914300680160522,
-        1.5559526681900024,
-        0.36960291862487793
+        5.004494667053223,
+        0.656163215637207,
+        5.833690166473389
       ],
       "min": [
-        -1.8468284606933594,
-        -1.7533053159713745,
-        -0.39154019951820374
+        -5.036223888397217,
+        -0.7508058547973633,
+        -5.830513954162598
       ],
       "type": "VEC3"
     },
     {
       "bufferView": 2,
-      "byteOffset": 16884,
+      "byteOffset": 4620,
       "componentType": 5126,
-      "count": 1407,
+      "count": 385,
       "max": [
-        0.9842076897621155,
-        0.994563639163971,
-        0.9992365837097168
+        0.9682690501213074,
+        0.9999991655349731,
+        0.9958510398864746
       ],
       "min": [
-        -0.9981757402420044,
-        -0.9949023127555847,
-        -0.9995516538619995
+        -0.9908791780471802,
+        -0.9999813437461853,
+        -0.9996556639671326
       ],
       "type": "VEC3"
     },
     {
-      "bufferView": 1,
+      "bufferView": 3,
       "componentType": 5126,
-      "count": 1407,
+      "count": 385,
       "max": [
-        0.3491591513156891,
-        0.9994003772735596
+        0.9998984932899475,
+        0.9902361035346985,
+        0.9140822887420654,
+        1.0
       ],
       "min": [
-        0.0010787207866087556,
-        0.00014835511683486402
+        -0.9935421347618103,
+        -0.9935553669929504,
+        -0.9654394388198853,
+        1.0
+      ],
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 385,
+      "max": [
+        0.9877662062644958,
+        0.9965454339981079
+      ],
+      "min": [
+        0.0005271746194921434,
+        0.0005457699298858643
       ],
       "type": "VEC2"
     },
     {
       "bufferView": 0,
       "componentType": 5125,
-      "count": 2886,
+      "count": 1620,
       "type": "SCALAR"
     }
   ],
   "asset": {
     "extras": {
-      "author": "malle87 (https://sketchfab.com/malle87)",
+      "author": "Alex Bes (https://sketchfab.com/alexbescg)",
       "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
-      "source": "https://sketchfab.com/3d-models/iron-nails-d4627ee5b4c94498b5239fd48eb4f693",
-      "title": "Iron_nails"
+      "source": "https://sketchfab.com/3d-models/nails-01b4745c45ac480d99d51879165cd247",
+      "title": "Nails"
     },
-    "generator": "Sketchfab-15.34.0",
+    "generator": "Sketchfab-12.68.0",
     "version": "2.0"
   },
   "bufferViews": [
     {
       "buffer": 0,
-      "byteLength": 11544,
+      "byteLength": 6480,
       "name": "floatBufferViews",
       "target": 34963
     },
     {
       "buffer": 0,
-      "byteLength": 11256,
-      "byteOffset": 11544,
+      "byteLength": 3080,
+      "byteOffset": 6480,
       "byteStride": 8,
       "name": "floatBufferViews",
       "target": 34962
     },
     {
       "buffer": 0,
-      "byteLength": 33768,
-      "byteOffset": 22800,
+      "byteLength": 9240,
+      "byteOffset": 9560,
       "byteStride": 12,
+      "name": "floatBufferViews",
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 6160,
+      "byteOffset": 18800,
+      "byteStride": 16,
       "name": "floatBufferViews",
       "target": 34962
     }
   ],
   "buffers": [
     {
-      "byteLength": 56568,
+      "byteLength": 24960,
       "uri": "scene.bin"
     }
   ],
   "images": [
     {
-      "uri": "textures/Material.002_baseColor.jpeg"
+      "uri": "textures/nails_mat_baseColor.jpeg"
+    },
+    {
+      "uri": "textures/nails_mat_metallicRoughness.png"
+    },
+    {
+      "uri": "textures/nails_mat_normal.jpeg"
     }
   ],
   "materials": [
     {
       "doubleSided": true,
-      "name": "Material.002",
+      "name": "nails_mat",
+      "normalTexture": {
+        "index": 2
+      },
+      "occlusionTexture": {
+        "index": 1
+      },
       "pbrMetallicRoughness": {
         "baseColorTexture": {
           "index": 0
         },
-        "metallicFactor": 0.0,
-        "roughnessFactor": 0.8211145618000169
+        "metallicRoughnessTexture": {
+          "index": 1
+        }
       }
     }
   ],
   "meshes": [
     {
-      "name": "Nails_rust_Material.002_0",
+      "name": "nails_model_nails_mat_0",
       "primitives": [
         {
           "attributes": {
             "NORMAL": 1,
             "POSITION": 0,
-            "TEXCOORD_0": 2
+            "TANGENT": 2,
+            "TEXCOORD_0": 3
           },
-          "indices": 3,
+          "indices": 4,
           "material": 0,
           "mode": 4
         }
@@ -159,16 +199,16 @@
         2
       ],
       "matrix": [
-        0.009999999776482582,
+        1.0,
         0.0,
         0.0,
         0.0,
         0.0,
         0.0,
-        0.009999999776482582,
+        1.0,
         0.0,
         0.0,
-        -0.009999999776482582,
+        -1.0,
         0.0,
         0.0,
         0.0,
@@ -176,7 +216,7 @@
         0.0,
         1.0
       ],
-      "name": "57aa40b84e2d494f990adcdfb1706385.fbx"
+      "name": "57674e1c0f3b4809922114d954a520f9.fbx"
     },
     {
       "children": [
@@ -188,29 +228,11 @@
       "children": [
         4
       ],
-      "matrix": [
-        100.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        -1.629206793918314e-05,
-        -99.99999999999868,
-        0.0,
-        0.0,
-        99.99999999999868,
-        -1.629206793918314e-05,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        1.0
-      ],
-      "name": "Nails_rust"
+      "name": "nails_model"
     },
     {
       "mesh": 0,
-      "name": "Nails_rust_Material.002_0"
+      "name": "nails_model_nails_mat_0"
     }
   ],
   "samplers": [
@@ -234,6 +256,14 @@
     {
       "sampler": 0,
       "source": 0
+    },
+    {
+      "sampler": 0,
+      "source": 1
+    },
+    {
+      "sampler": 0,
+      "source": 2
     }
   ]
 }

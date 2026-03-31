@@ -1,8 +1,9 @@
-import React, { useRef, Suspense, useState, useCallback, useMemo } from 'react';
+import React, { useRef, Suspense, useState, useCallback, useMemo, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Stars, useGLTF, useAnimations, Ring } from '@react-three/drei';
+import { OrbitControls, Stars, useGLTF, useAnimations, Ring, Billboard, Line, Text } from '@react-three/drei';
 import { XR, createXRStore, useXRHitTest, IfInSessionMode, useXR } from '@react-three/xr';
 import { Group, Matrix4, Vector3, Quaternion, Euler, Box3 } from 'three';
+import { magneticObjects } from '../data/mockData';
 
 const store = createXRStore();
 
@@ -101,6 +102,58 @@ function ARPlacedModel({ children }: { children: React.ReactNode }) {
         {children}
       </group>
     </>
+  );
+}
+
+// ─── AR annotation wrapper (Renders Billboard above the placed model) ─────────
+function ARAnnotatedModel({ modelType, currentSlide, children }: { modelType: string, currentSlide: number, children: React.ReactNode }) {
+  const objectData = useMemo(() => magneticObjects.find(o => o.modelType === modelType), [modelType]);
+  const CARD_HEIGHT = 0.40;
+
+  if (!objectData || !objectData.annotations) {
+    return <ARPlacedModel>{children}</ARPlacedModel>;
+  }
+
+  const slideText = objectData.annotations[currentSlide] || '';
+
+  return (
+    <ARPlacedModel>
+      {/* 1. The original physical model */}
+      {children}
+
+      {/* 2. Floating Info Card Annotation */}
+      {/* Local offset upwards from the tap-to-place origin */}
+      <group position={[0, CARD_HEIGHT, 0]}>
+        {/* Laser pointer down to model */}
+        <Line points={[[0, -CARD_HEIGHT + 0.05, 0], [0, -0.05, 0]]} color={objectData.isMagnetic ? "#00c878" : "#8892b0"} lineWidth={3} />
+        
+        <Billboard follow={true}>
+           {/* Glass Background */}
+           <mesh position={[0, 0, -0.01]}>
+             <planeGeometry args={[0.75, 0.45]} />
+             <meshStandardMaterial color="#0a0a1a" transparent opacity={0.88} />
+           </mesh>
+           {/* Colored Border */}
+           <Line
+             points={[[-0.375, 0.225, 0], [0.375, 0.225, 0], [0.375, -0.225, 0], [-0.375, -0.225, 0], [-0.375, 0.225, 0]]}
+             color={objectData.isMagnetic ? "#00c878" : "#8892b0"}
+             lineWidth={3}
+           />
+           <Text position={[0, 0.15, 0]} fontSize={0.055} color={objectData.isMagnetic ? "#00c878" : "#ff4d4d"} anchorX="center" fontWeight="bold">
+             {objectData.isMagnetic ? "MAGNETIC" : "NON-MAGNETIC"}
+           </Text>
+           <Text position={[0, 0.08, 0]} fontSize={0.065} color="#ffffff" anchorX="center" fontWeight="bold">
+             {objectData.label}
+           </Text>
+           <Text position={[0, -0.05, 0]} fontSize={0.038} color="#cccccc" anchorX="center" textAlign="center" maxWidth={0.68} lineHeight={1.2}>
+             {slideText}
+           </Text>
+           <Text position={[0, -0.18, 0]} fontSize={0.028} color="#888888" anchorX="center">
+             {`Slide ${currentSlide + 1} of ${objectData.annotations.length}`}
+           </Text>
+        </Billboard>
+      </group>
+    </ARPlacedModel>
   );
 }
 
@@ -303,21 +356,67 @@ export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
   const isSolar = modelType === 'solar-system';
   const isMagnet = modelType === 'magnet';
 
+  const magneticObj = useMemo(() => magneticObjects.find(o => o.modelType === modelType), [modelType]);
+  const hasAnnotations = !!(magneticObj && magneticObj.annotations && magneticObj.annotations.length > 0);
+  
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isInAR, setIsInAR] = useState(false);
+
+  useEffect(() => {
+    // Reset slide when model changes
+    setCurrentSlide(0);
+  }, [modelType]);
+
+  useEffect(() => {
+    const unsub = (store as any).subscribe((state: any) => {
+      setIsInAR(state.mode === 'immersive-ar');
+    });
+    return unsub;
+  }, []);
+
+  const handleNext = () => setCurrentSlide(s => Math.min(s + 1, (magneticObj?.annotations?.length || 1) - 1));
+  const handlePrev = () => setCurrentSlide(s => Math.max(s - 1, 0));
+
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1px solid rgba(255, 255, 255, 0.1)', background: '#0a0a0a' }}>
-      <button
-        style={{ position: 'absolute', bottom: '20px', right: '20px', zIndex: 10, padding: '12px 24px', borderRadius: 'var(--radius-full)', background: 'var(--gradient-primary)', border: 'none', color: 'white', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(0, 240, 255, 0.3)', transition: 'transform 0.2s' }}
-        onClick={() => store.enterAR()}
-        onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
-        onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-      >
-        View in AR
-      </button>
+      
+      {/* Slide Navigation Buttons (Only in AR DOM Overlay) */}
+      {isInAR && hasAnnotations && (
+        <div style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 30, display: 'flex', gap: '15px' }}>
+          <button
+            onClick={handlePrev}
+            disabled={currentSlide === 0}
+            style={{ padding: '12px 20px', borderRadius: '50%', background: currentSlide === 0 ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 'bold', fontSize: '1.2rem', cursor: currentSlide === 0 ? 'not-allowed' : 'pointer', backdropFilter: 'blur(8px)' }}
+          >
+            ←
+          </button>
+          <button
+            onClick={handleNext}
+            disabled={currentSlide === (magneticObj!.annotations!.length - 1)}
+            style={{ padding: '12px 20px', borderRadius: '50%', background: currentSlide === (magneticObj!.annotations!.length - 1) ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 'bold', fontSize: '1.2rem', cursor: currentSlide === (magneticObj!.annotations!.length - 1) ? 'not-allowed' : 'pointer', backdropFilter: 'blur(8px)' }}
+          >
+            →
+          </button>
+        </div>
+      )}
+
+      {!isInAR && (
+        <button
+          style={{ position: 'absolute', bottom: '20px', right: '20px', zIndex: 10, padding: '12px 24px', borderRadius: 'var(--radius-full)', background: 'var(--gradient-primary)', border: 'none', color: 'white', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(0, 240, 255, 0.3)', transition: 'transform 0.2s' }}
+          onClick={() => store.enterAR()}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+        >
+          View in AR
+        </button>
+      )}
 
       {/* AR hint */}
-      <div style={{ position: 'absolute', top: '12px', left: '50%', transform: 'translateX(-50%)', zIndex: 10, pointerEvents: 'none', opacity: 0.7, fontSize: '0.78rem', color: '#aaa', whiteSpace: 'nowrap' }}>
-        In AR: aim at a surface · tap to place
-      </div>
+      {isInAR && (
+        <div style={{ position: 'absolute', top: '12px', left: '50%', transform: 'translateX(-50%)', zIndex: 10, pointerEvents: 'none', opacity: 0.8, fontSize: '0.8rem', color: '#fff', whiteSpace: 'nowrap', background: 'rgba(0,0,0,0.5)', padding: '4px 12px', borderRadius: '12px' }}>
+          Tap to place object · Info card will appear
+        </div>
+      )}
 
       <Canvas
         gl={{ alpha: true, antialias: true }}
@@ -361,11 +460,11 @@ export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
             </group>
           </IfInSessionMode>
 
-          {/* ── Inside AR: hit-test placement ── */}
+          {/* ── Inside AR: hit-test placement + 3D Annotations ── */}
           <IfInSessionMode allow="immersive-ar">
-            <ARPlacedModel>
+            <ARAnnotatedModel modelType={modelType} currentSlide={currentSlide}>
               <SceneModel modelType={modelType} />
-            </ARPlacedModel>
+            </ARAnnotatedModel>
           </IfInSessionMode>
         </XR>
       </Canvas>

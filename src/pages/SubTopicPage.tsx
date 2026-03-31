@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { encyclopediaData, magneticObjects } from '../data/mockData';
 import { ModelViewer } from '../components/ModelViewer';
-import { MagnetSimulator } from '../components/MagnetSimulator';
 import { ArrowLeft, Lightbulb, Magnet, Ban } from 'lucide-react';
 
 export const SubTopicPage: React.FC = () => {
@@ -77,7 +76,7 @@ export const SubTopicPage: React.FC = () => {
         <div style={{ display: 'flex', gap: '3rem', flexGrow: 1, flexWrap: 'wrap', paddingBottom: '3rem' }}>
           {/* 3-D viewer */}
           <div style={{ flex: '1.5', minWidth: '320px', minHeight: '460px' }}>
-            <MagnetSimulator modelType={active.modelType} isMagnetic={active.isMagnetic} />
+            <ModelViewer modelType={active.modelType} />
           </div>
 
           {/* Info panel */}

@@ -1,11 +1,11 @@
 Model Information:
-* title:	Iron_nails
-* source:	https://sketchfab.com/3d-models/iron-nails-d4627ee5b4c94498b5239fd48eb4f693
-* author:	malle87 (https://sketchfab.com/malle87)
+* title:	Nails
+* source:	https://sketchfab.com/3d-models/nails-01b4745c45ac480d99d51879165cd247
+* author:	Alex Bes (https://sketchfab.com/alexbescg)
 
 Model License:
 * license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
 * requirements:	Author must be credited. Commercial use is allowed.
 
 If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
-This work is based on "Iron_nails" (https://sketchfab.com/3d-models/iron-nails-d4627ee5b4c94498b5239fd48eb4f693) by malle87 (https://sketchfab.com/malle87) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+This work is based on "Nails" (https://sketchfab.com/3d-models/nails-01b4745c45ac480d99d51879165cd247) by Alex Bes (https://sketchfab.com/alexbescg) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
