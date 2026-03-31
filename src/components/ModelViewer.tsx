@@ -106,15 +106,33 @@ function ARPlacedModel({ children }: { children: React.ReactNode }) {
 }
 
 // ─── AR annotation wrapper (Renders Billboard above the placed model) ─────────
-function ARAnnotatedModel({ modelType, currentSlide, children }: { modelType: string, currentSlide: number, children: React.ReactNode }) {
+function ARAnnotatedModel({ modelType, children }: { modelType: string, children: React.ReactNode }) {
   const objectData = useMemo(() => magneticObjects.find(o => o.modelType === modelType), [modelType]);
+  const [currentSlide, setCurrentSlide] = useState(0);
   const CARD_HEIGHT = 0.40;
+
+  // Reset slide if object model changes
+  useEffect(() => setCurrentSlide(0), [modelType]);
 
   if (!objectData || !objectData.annotations) {
     return <ARPlacedModel>{children}</ARPlacedModel>;
   }
 
   const slideText = objectData.annotations[currentSlide] || '';
+  const totalSlides = objectData.annotations.length;
+  
+  const canPrev = currentSlide > 0;
+  const canNext = currentSlide < totalSlides - 1;
+
+  const handlePrev = (e: any) => {
+    e.stopPropagation();
+    if (canPrev) setCurrentSlide(s => s - 1);
+  };
+
+  const handleNext = (e: any) => {
+    e.stopPropagation();
+    if (canNext) setCurrentSlide(s => s + 1);
+  };
 
   return (
     <ARPlacedModel>
@@ -150,9 +168,31 @@ function ARAnnotatedModel({ modelType, currentSlide, children }: { modelType: st
            <Text position={[0, -0.05, 0]} fontSize={0.038} color="#cccccc" anchorX="center" textAlign="center" maxWidth={0.68} lineHeight={1.2}>
              {slideText}
            </Text>
-           <Text position={[0, -0.18, 0]} fontSize={0.028} color="#888888" anchorX="center">
-             {`Slide ${currentSlide + 1} of ${objectData.annotations.length}`}
+           <Text position={[0, -0.15, 0]} fontSize={0.028} color="#888888" anchorX="center">
+             {`Slide ${currentSlide + 1} of ${totalSlides}`}
            </Text>
+
+           {/* 3D AR Button: Previous */}
+           <group position={[-0.18, -0.22, 0.01]}>
+             <mesh onPointerDown={handlePrev}>
+               <planeGeometry args={[0.15, 0.06]} />
+               <meshStandardMaterial color={canPrev ? "#ffffff" : "#4a5568"} transparent opacity={canPrev ? 0.25 : 0.1} />
+             </mesh>
+             <Text position={[0, 0, 0.005]} fontSize={0.03} color={canPrev ? "#ffffff" : "#888888"} anchorX="center" anchorY="middle" fontWeight="bold" pointerEvents="none">
+               ← Prev
+             </Text>
+           </group>
+
+           {/* 3D AR Button: Next */}
+           <group position={[0.18, -0.22, 0.01]}>
+             <mesh onPointerDown={handleNext}>
+               <planeGeometry args={[0.15, 0.06]} />
+               <meshStandardMaterial color={canNext ? "#ffffff" : "#4a5568"} transparent opacity={canNext ? 0.25 : 0.1} />
+             </mesh>
+             <Text position={[0, 0, 0.005]} fontSize={0.03} color={canNext ? "#ffffff" : "#888888"} anchorX="center" anchorY="middle" fontWeight="bold" pointerEvents="none">
+               Next →
+             </Text>
+           </group>
         </Billboard>
       </group>
     </ARPlacedModel>
@@ -358,16 +398,7 @@ export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
   const isSolar = modelType === 'solar-system';
   const isMagnet = modelType === 'magnet';
 
-  const magneticObj = useMemo(() => magneticObjects.find(o => o.modelType === modelType), [modelType]);
-  const hasAnnotations = !!(magneticObj && magneticObj.annotations && magneticObj.annotations.length > 0);
-  
-  const [currentSlide, setCurrentSlide] = useState(0);
   const [isInAR, setIsInAR] = useState(false);
-
-  useEffect(() => {
-    // Reset slide when model changes
-    setCurrentSlide(0);
-  }, [modelType]);
 
   useEffect(() => {
     const unsub = (store as any).subscribe((state: any) => {
@@ -376,32 +407,9 @@ export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
     return unsub;
   }, []);
 
-  const handleNext = () => setCurrentSlide(s => Math.min(s + 1, (magneticObj?.annotations?.length || 1) - 1));
-  const handlePrev = () => setCurrentSlide(s => Math.max(s - 1, 0));
-
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1px solid rgba(255, 255, 255, 0.1)', background: '#0a0a0a' }}>
       
-      {/* Slide Navigation Buttons (Only in AR DOM Overlay) */}
-      {isInAR && hasAnnotations && (
-        <div style={{ position: 'absolute', bottom: '10%', left: '50%', transform: 'translateX(-50%)', zIndex: 9999, display: 'flex', gap: '20px', pointerEvents: 'none' }}>
-          <button
-            onClick={handlePrev}
-            disabled={currentSlide === 0}
-            style={{ pointerEvents: 'auto', padding: '14px 24px', borderRadius: '30px', background: currentSlide === 0 ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.25)', border: '1px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 'bold', fontSize: '1.05rem', cursor: currentSlide === 0 ? 'not-allowed' : 'pointer', backdropFilter: 'blur(8px)', boxShadow: '0 4px 15px rgba(0,0,0,0.5)' }}
-          >
-            ← Previous
-          </button>
-          <button
-            onClick={handleNext}
-            disabled={currentSlide === (magneticObj!.annotations!.length - 1)}
-            style={{ pointerEvents: 'auto', padding: '14px 24px', borderRadius: '30px', background: currentSlide === (magneticObj!.annotations!.length - 1) ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.25)', border: '1px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 'bold', fontSize: '1.05rem', cursor: currentSlide === (magneticObj!.annotations!.length - 1) ? 'not-allowed' : 'pointer', backdropFilter: 'blur(8px)', boxShadow: '0 4px 15px rgba(0,0,0,0.5)' }}
-          >
-            Next →
-          </button>
-        </div>
-      )}
-
       {!isInAR && (
         <button
           style={{ position: 'absolute', bottom: '20px', right: '20px', zIndex: 10, padding: '12px 24px', borderRadius: 'var(--radius-full)', background: 'var(--gradient-primary)', border: 'none', color: 'white', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(0, 240, 255, 0.3)', transition: 'transform 0.2s' }}
@@ -464,7 +472,7 @@ export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
 
           {/* ── Inside AR: hit-test placement + 3D Annotations ── */}
           <IfInSessionMode allow="immersive-ar">
-            <ARAnnotatedModel modelType={modelType} currentSlide={currentSlide}>
+            <ARAnnotatedModel modelType={modelType}>
               <SceneModel modelType={modelType} />
             </ARAnnotatedModel>
           </IfInSessionMode>
