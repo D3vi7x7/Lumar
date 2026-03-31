@@ -72,15 +72,17 @@ function ARPlacedModel({ children }: { children: React.ReactNode }) {
   // Use the native XR session 'select' event — DOM events don't fire in WebXR
   const session = useXR((s) => s.session);
   React.useEffect(() => {
-    if (!session) return;
+    if (!session || placed) return; // Stop listening to taps once placed
+    
     const onSelect = () => {
       placedPos.current.copy(reticlePos.current);
       placedQuat.current.copy(reticleQuat.current);
       setPlaced(true);
     };
+    
     session.addEventListener('select', onSelect);
     return () => session.removeEventListener('select', onSelect);
-  }, [session]);
+  }, [session, placed]);
 
   useFrame(() => {
     if (!groupRef.current) return;
@@ -97,7 +99,9 @@ function ARPlacedModel({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <ARReticle onPositionUpdate={handlePositionUpdate} />
+      {/* Hide the blue placement ring once the object is placed */}
+      {!placed && <ARReticle onPositionUpdate={handlePositionUpdate} />}
+      
       <group ref={groupRef} visible={false}>
         {children}
       </group>
