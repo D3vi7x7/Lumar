@@ -216,7 +216,18 @@ function makeGLTF(path: string, rotationSpeed = 0.003, targetSize = 2): React.FC
     // updateWorldMatrix ensures all nested transforms are baked before Box3 measures.
     const { scale, offset } = useMemo(() => {
       scene.updateWorldMatrix(true, true);
-      const box = new Box3().setFromObject(scene);
+      const box = new Box3();
+      box.makeEmpty();
+      scene.traverse((child) => {
+        if ((child as any).isMesh) {
+          box.expandByObject(child);
+        }
+      });
+      // Fallback if no meshes found
+      if (box.isEmpty()) {
+        box.setFromObject(scene);
+      }
+
       const size   = new Vector3();
       const center = new Vector3();
       box.getSize(size);

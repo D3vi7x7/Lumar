@@ -2,7 +2,7 @@ import React, {
   useRef, useMemo, useState, useEffect, useCallback
 } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Text, useGLTF } from '@react-three/drei';
+import { Text, useGLTF, OrbitControls } from '@react-three/drei';
 import {
   XR, createXRStore, useXRHitTest, IfInSessionMode, useXR
 } from '@react-three/xr';
@@ -14,21 +14,35 @@ import {
 // ─── Constants ───────────────────────────────────────────────────────────────
 const ATTRACTION_RADIUS = 2.6;
 const SNAP_RADIUS       = 0.58;
-const OBJ_START         = new Vector3(-2.2, 0, 0);
-const MAG_START         = new Vector3( 3.8, 0, 0);
+// Adjusted starting coordinates slightly inwards to center composition better
+const OBJ_START         = new Vector3(-1.8, 0, 0);
+const MAG_START         = new Vector3( 2.2, 0, 0);
 
 type SimState = 'idle' | 'attracting' | 'stuck' | 'repelled';
 
-// ─── Auto-fit GLTF (no self-rotation — we want it stationary for the sim) ───
+// ─── Auto-fit GLTF (no self-rotation — stationary) ───────────────────────────
 function AutoFitGLTF({ path, targetSize = 1.6 }: { path: string; targetSize?: number }) {
   const { scene } = useGLTF(path);
   const { scale, offset } = useMemo(() => {
     scene.updateWorldMatrix(true, true);
-    const box    = new Box3().setFromObject(scene);
+    const box = new Box3();
+    box.makeEmpty();
+    // Only expand box using meshes. Prevents invisible lights from skewing bounds!
+    scene.traverse((child) => {
+      if ((child as any).isMesh) {
+        box.expandByObject(child);
+      }
+    });
+
+    if (box.isEmpty()) {
+      box.setFromObject(scene);
+    }
+
     const size   = new Vector3();
     const center = new Vector3();
     box.getSize(size);
     box.getCenter(center);
+    
     const maxDim = Math.max(size.x, size.y, size.z);
     const sc = maxDim > 0 ? targetSize / maxDim : 1;
     return {
@@ -109,7 +123,7 @@ function Sparks({ active }: { active: boolean }) {
   );
 }
 
-// ─── Pulsing attraction glow (sphere shell around object) ───────────────────
+// ─── Pulsing attraction glow ─────────────────────────────────────────────────
 function AttractionGlow({ proximity }: { proximity: number }) {
   const ref = useRef<Mesh>(null);
   useFrame(({ clock }) => {
@@ -142,7 +156,7 @@ function RepelRing({ active }: { active: boolean }) {
   );
 }
 
-// ─── Drag label (disappears after first drag) ────────────────────────────────
+// ─── Drag label ──────────────────────────────────────────────────────────────
 function DragHint({ show }: { show: boolean }) {
   if (!show) return null;
   return (
@@ -169,41 +183,32 @@ interface SceneProps {
 function MagnetScene({ modelType, isMagnetic, onState, resetKey }: SceneProps) {
   const { camera, gl } = useThree();
 
-  // Live position refs (mutated every frame — no re-render cost)
   const magnetPos  = useRef(MAG_START.clone());
   const objectPos  = useRef(OBJ_START.clone());
   const stateRef   = useRef<SimState>('idle');
   const dragging   = useRef(false);
-  const repelShown = useRef(false);
 
-  // Group refs for Three.js position mutations
   const magnetRef  = useRef<Group>(null);
   const objectRef  = useRef<Group>(null);
-
-  // Shared attraction point-light ref
   const glowLightRef = useRef<any>(null);
 
-  // React state — only for things that drive HTML overlays
-  const [proximity,  setProximity]  = useState(0);
-  const [simState,   setSimState]   = useState<SimState>('idle');
-  const [showHint,   setShowHint]   = useState(true);
+  const [proximity,   setProximity]  = useState(0);
+  const [simState,    setSimState]   = useState<SimState>('idle');
+  const [showHint,    setShowHint]   = useState(true);
+  const [isReactDragging, setIsReactDragging] = useState(false);
 
-  // Drag plane: always faces the camera (Z = constant at magnet depth)
   const dragPlane = useMemo(() => new Plane(new Vector3(0, 0, 1), 0), []);
 
-  // Reset on key change
   useEffect(() => {
     magnetPos.current.copy(MAG_START);
     objectPos.current.copy(OBJ_START);
     stateRef.current  = 'idle';
-    repelShown.current = false;
     setSimState('idle');
     setProximity(0);
     setShowHint(true);
     onState('idle');
   }, [resetKey]); // eslint-disable-line
 
-  // Global pointer-move/up listeners for smooth drag
   useEffect(() => {
     const canvas    = gl.domElement;
     const raycaster = new Raycaster();
@@ -227,6 +232,7 @@ function MagnetScene({ modelType, isMagnetic, onState, resetKey }: SceneProps) {
       }
     };
     const onUp = () => {
+      if (dragging.current) setIsReactDragging(false);
       dragging.current = false;
       canvas.style.cursor = 'auto';
     };
@@ -239,7 +245,6 @@ function MagnetScene({ modelType, isMagnetic, onState, resetKey }: SceneProps) {
     };
   }, [camera, gl, dragPlane]);
 
-  // Physics + render sync every frame
   useFrame((_, dt) => {
     if (!magnetRef.current || !objectRef.current) return;
 
@@ -252,7 +257,6 @@ function MagnetScene({ modelType, isMagnetic, onState, resetKey }: SceneProps) {
       if (isMagnetic) {
         if (dist < SNAP_RADIUS || stateRef.current === 'stuck') {
           next = 'stuck';
-          // Stick: object sits just left of the N pole
           const target = magnetPos.current.clone().add(new Vector3(-1.15, 0, 0));
           objectPos.current.lerp(target, 0.18);
         } else {
@@ -265,11 +269,9 @@ function MagnetScene({ modelType, isMagnetic, onState, resetKey }: SceneProps) {
       }
     }
 
-    // Sync 3D positions
     magnetRef.current.position.copy(magnetPos.current);
     objectRef.current.position.copy(objectPos.current);
 
-    // Glow light between magnet and object
     if (glowLightRef.current) {
       glowLightRef.current.intensity = prox * 3.5;
       glowLightRef.current.position.lerpVectors(
@@ -277,7 +279,6 @@ function MagnetScene({ modelType, isMagnetic, onState, resetKey }: SceneProps) {
       );
     }
 
-    // Flush to React state (proximity throttled to avoid excess renders)
     if (Math.abs(prox - proximity) > 0.03) setProximity(prox);
     if (next !== stateRef.current) {
       stateRef.current = next;
@@ -289,16 +290,17 @@ function MagnetScene({ modelType, isMagnetic, onState, resetKey }: SceneProps) {
   const onMagnetDown = useCallback((e: any) => {
     e.stopPropagation();
     dragging.current = true;
+    setIsReactDragging(true);
     gl.domElement.style.cursor = 'grabbing';
     setShowHint(false);
   }, [gl]);
 
   return (
     <>
-      {/* Glow attraction point-light */}
+      <OrbitControls makeDefault enabled={!isReactDragging} minDistance={2} maxDistance={20} />
+
       <pointLight ref={glowLightRef} color="#00f0ff" intensity={0} distance={6} />
 
-      {/* Object group */}
       <group ref={objectRef} position={OBJ_START.toArray()}>
         <AutoFitGLTF path={`/${modelType}/scene.gltf`} targetSize={1.6} />
         <AttractionGlow proximity={proximity} />
@@ -306,30 +308,25 @@ function MagnetScene({ modelType, isMagnetic, onState, resetKey }: SceneProps) {
         {simState === 'repelled' && <RepelRing active />}
       </group>
 
-      {/* Magnet group */}
       <group ref={magnetRef} position={MAG_START.toArray()}>
         <BarMagnet onPointerDown={onMagnetDown} />
       </group>
 
-      {/* Drag hint text */}
       <DragHint show={showHint} />
 
-      {/* Floor grid for depth cue */}
       <gridHelper args={[14, 14, '#1a1a2e', '#1a1a2e']}
                   position={[0, -1.6, 0]} />
     </>
   );
 }
 
-// ─── AR scene ────────────────────────────────────────────────────────────────
-interface ARSceneProps extends SceneProps {
-  arOffset: number;   // 0 = touching, ~1.5 = starting distance
-}
+// ─── AR scene (Free-Drag on Table Surface) ───────────────────────────────────
+interface ARSceneProps extends SceneProps {}
 
-function ARMagnetScene({ modelType, isMagnetic, onState, resetKey, arOffset }: ARSceneProps) {
+function ARMagnetScene({ modelType, isMagnetic, onState, resetKey }: ARSceneProps) {
   const session = useXR((s) => s.session);
+  const { camera } = useThree();
 
-  // Shared one-time allocated math objects
   const _mat  = useMemo(() => new Matrix4(),    []);
   const _pos  = useMemo(() => new Vector3(),    []);
   const _quat = useMemo(() => new Quaternion(), []);
@@ -342,27 +339,43 @@ function ARMagnetScene({ modelType, isMagnetic, onState, resetKey, arOffset }: A
   const placedQuat    = useRef(new Quaternion());
 
   const objectPos     = useRef(new Vector3());
+  const magnetPos     = useRef(new Vector3());
   const stateRef      = useRef<SimState>('idle');
 
   const objectRef     = useRef<Group>(null);
   const magnetRef     = useRef<Group>(null);
   const reticleRef    = useRef<Group>(null);
+  
+  const dragPlane   = useMemo(() => new Plane(new Vector3(0, 1, 0), 0), []);
+  const dragging    = useRef(false);
 
   // Tap to place
   useEffect(() => {
-    if (!session) return;
+    if (!session || placed) return;
     const onSelect = () => {
       placedPos.current.copy(reticlePos.current);
       placedQuat.current.copy(reticleQuat.current);
       objectPos.current.copy(reticlePos.current);
+      
+      // Initial offset: Place magnet ~20cm to the right of the object
+      const offset = new Vector3(0.20, 0, 0);
+      offset.applyQuaternion(reticleQuat.current);
+      magnetPos.current.copy(reticlePos.current).add(offset);
+      
+      // Constrain dragging strictly to this horizontal table level
+      dragPlane.setComponents(0, 1, 0, -placedPos.current.y);
       setPlaced(true);
     };
     session.addEventListener('select', onSelect);
     return () => session.removeEventListener('select', onSelect);
-  }, [session]);
+  }, [session, placed, dragPlane]);
 
   // Hit-test for reticle
   useXRHitTest((results, getWorldMatrix) => {
+    if (placed) {
+      if (reticleRef.current) reticleRef.current.visible = false;
+      return;
+    }
     if (results.length === 0) {
       if (reticleRef.current) reticleRef.current.visible = false;
       return;
@@ -381,23 +394,52 @@ function ARMagnetScene({ modelType, isMagnetic, onState, resetKey, arOffset }: A
   useEffect(() => {
     if (!placed) return;
     objectPos.current.copy(placedPos.current);
+    
+    const offset = new Vector3(0.20, 0, 0);
+    offset.applyQuaternion(placedQuat.current);
+    magnetPos.current.copy(placedPos.current).add(offset);
+    
     stateRef.current = 'idle';
+    dragging.current = false;
     onState('idle');
   }, [resetKey, placed]); // eslint-disable-line
+
+  // Drag Listeners via raycast matching Window touch interaction
+  useEffect(() => {
+    if (!placed) return;
+    const raycaster = new Raycaster();
+    const hit       = new Vector3();
+
+    const onMove = (e: PointerEvent) => {
+      if (!dragging.current) return;
+      const ndc = new Vector2(
+        (e.clientX / window.innerWidth) * 2 - 1,
+        -(e.clientY / window.innerHeight) * 2 + 1
+      );
+      raycaster.setFromCamera(ndc, camera);
+      if (raycaster.ray.intersectPlane(dragPlane, hit)) {
+        // Enforce arbitrary 1.5m radius bound so user doesn't lose the magnet infinitely
+        if (hit.distanceTo(placedPos.current) < 1.5) {
+          magnetPos.current.copy(hit);
+        }
+      }
+    };
+    const onUp = () => { dragging.current = false; };
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup',   onUp);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup',   onUp);
+    };
+  }, [camera, dragPlane, placed]);
 
   useFrame((_, dt) => {
     if (!placed || !objectRef.current || !magnetRef.current) return;
 
-    // Magnet position: offset along world X from placed position
-    const AR_SCALE  = 0.12;   // 12 cm AR scale
-    const magWorldX = placedPos.current.x + arOffset * AR_SCALE;
-    const magnetWorldPos = new Vector3(
-      magWorldX,
-      placedPos.current.y,
-      placedPos.current.z
-    );
-
-    const dist = magnetWorldPos.distanceTo(objectPos.current);
+    const dist = magnetPos.current.distanceTo(objectPos.current);
+    
+    const AR_SCALE  = 0.12;
     const arAttract = ATTRACTION_RADIUS * AR_SCALE;
     const arSnap    = SNAP_RADIUS * AR_SCALE;
 
@@ -406,19 +448,32 @@ function ARMagnetScene({ modelType, isMagnetic, onState, resetKey, arOffset }: A
       if (isMagnetic) {
         if (dist < arSnap || stateRef.current === 'stuck') {
           next = 'stuck';
-          objectPos.current.lerp(magnetWorldPos, 0.15);
+          // Snap slightly to the left side
+          const dir = magnetPos.current.clone().sub(objectPos.current).normalize();
+          const target = magnetPos.current.clone().sub(dir.multiplyScalar(0.12));
+          objectPos.current.lerp(target, 0.15);
         } else {
           next = 'attracting';
           const speed = Math.min(0.08, 1.2 / (dist * dist));
-          objectPos.current.lerp(magnetWorldPos, speed * dt * 60);
+          objectPos.current.lerp(magnetPos.current, speed * dt * 60);
         }
       } else {
         next = 'repelled';
       }
     }
 
+    // Always aim the magnet's N-pole slightly towards the object for good visual snapping UX
+    if (next === 'attracting' || next === 'stuck' || dragging.current) {
+        const targetQ = new Quaternion().setFromRotationMatrix(
+            new Matrix4().lookAt(magnetPos.current, objectPos.current, new Vector3(0,1,0))
+        );
+        // Bar magnet model rests along X axis by default, so lookAt needs a -90 deg rotation on Y
+        targetQ.multiply(new Quaternion().setFromAxisAngle(new Vector3(0,1,0), Math.PI/2));
+        magnetRef.current.quaternion.slerp(targetQ, 0.1);
+    }
+
     objectRef.current.position.copy(objectPos.current);
-    magnetRef.current.position.copy(magnetWorldPos);
+    magnetRef.current.position.copy(magnetPos.current);
 
     if (next !== stateRef.current) {
       stateRef.current = next;
@@ -428,9 +483,13 @@ function ARMagnetScene({ modelType, isMagnetic, onState, resetKey, arOffset }: A
 
   const AR_RENDER_SCALE = 0.12;
 
+  const onMagnetDown = useCallback((e: any) => {
+    e.stopPropagation();
+    dragging.current = true;
+  }, []);
+
   return (
     <>
-      {/* Hit-test reticle */}
       <group ref={reticleRef} visible={false}>
         <mesh rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[0.06, 0.08, 32]} />
@@ -442,9 +501,11 @@ function ARMagnetScene({ modelType, isMagnetic, onState, resetKey, arOffset }: A
         <>
           <group ref={objectRef} scale={AR_RENDER_SCALE}>
             <AutoFitGLTF path={`/${modelType}/scene.gltf`} targetSize={1.6} />
+            {stateRef.current === 'stuck'    && <Sparks active />}
+            {stateRef.current === 'repelled' && <RepelRing active />}
           </group>
           <group ref={magnetRef} scale={AR_RENDER_SCALE}>
-            <BarMagnet onPointerDown={() => {}} />
+            <BarMagnet onPointerDown={onMagnetDown} />
           </group>
         </>
       )}
@@ -462,14 +523,7 @@ export const MagnetSimulator: React.FC<{
   const [simState,  setSimState]  = useState<SimState>('idle');
   const [resetKey,  setResetKey]  = useState(0);
   const [isInAR,    setIsInAR]    = useState(false);
-  const [arOffset,  setArOffset]  = useState(1.5);   // 1.5 = far, 0 = touching
 
-  // Vertical slider drag state
-  const sliderDragging  = useRef(false);
-  const sliderStartY    = useRef(0);
-  const sliderStartOff  = useRef(1.5);
-
-  // Track AR session via store subscription
   useEffect(() => {
     const unsub = (xrStore as any).subscribe((state: any) => {
       setIsInAR(state.mode === 'immersive-ar');
@@ -480,10 +534,8 @@ export const MagnetSimulator: React.FC<{
   const reset = useCallback(() => {
     setResetKey(k => k + 1);
     setSimState('idle');
-    setArOffset(1.5);
   }, []);
 
-  // Badge styles
   const badgeBase: React.CSSProperties = {
     position: 'absolute', top: 14, left: '50%',
     transform: 'translateX(-50%)', zIndex: 20,
@@ -501,7 +553,6 @@ export const MagnetSimulator: React.FC<{
       background: '#060910',
       border: '1px solid rgba(255,255,255,0.07)'
     }}>
-
       {/* ── Status badges ── */}
       {simState === 'stuck' && (
         <div style={{ ...badgeBase, background: 'rgba(0,200,120,0.14)',
@@ -529,7 +580,7 @@ export const MagnetSimulator: React.FC<{
                       transform: 'translateX(-50%)', zIndex: 20,
                       fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)',
                       pointerEvents: 'none', whiteSpace: 'nowrap' }}>
-          Tap to place · use slider to move magnet
+          Tap to place · slide magnet across surface
         </div>
       )}
 
@@ -553,62 +604,6 @@ export const MagnetSimulator: React.FC<{
         }}>View in AR</button>
       </div>
 
-      {/* ── AR vertical slider (magnet distance) ── */}
-      {isInAR && (
-        <div
-          style={{
-            position: 'absolute', right: 16,
-            top: '50%', transform: 'translateY(-50%)',
-            zIndex: 30, userSelect: 'none', touchAction: 'none',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6
-          }}
-          onPointerDown={(e) => {
-            sliderDragging.current   = true;
-            sliderStartY.current     = e.clientY;
-            sliderStartOff.current   = arOffset;
-            (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-          }}
-          onPointerMove={(e) => {
-            if (!sliderDragging.current) return;
-            const delta = (sliderStartY.current - e.clientY) / 80;
-            setArOffset(Math.max(0.05, Math.min(1.8, sliderStartOff.current + delta)));
-          }}
-          onPointerUp={() => { sliderDragging.current = false; }}
-        >
-          <span style={{ color:'rgba(255,255,255,0.45)', fontSize:'0.6rem',
-                          writingMode:'vertical-rl', transform:'rotate(180deg)' }}>
-            Farther
-          </span>
-          <div style={{
-            width: 40, height: 130,
-            background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)',
-            borderRadius: 20, border: '1px solid rgba(255,255,255,0.15)',
-            position: 'relative', overflow: 'hidden', cursor: 'ns-resize'
-          }}>
-            {/* Track */}
-            <div style={{
-              position: 'absolute', left:'50%', top: 6, bottom: 6,
-              width: 2, transform: 'translateX(-50%)',
-              background: 'rgba(255,255,255,0.1)', borderRadius: 1
-            }} />
-            {/* Thumb */}
-            <div style={{
-              position: 'absolute',
-              top: `${((1.8 - arOffset) / 1.75) * 100}%`,
-              left: '50%', transform: 'translate(-50%,-50%)',
-              width: 28, height: 28, borderRadius: '50%',
-              background: 'linear-gradient(135deg,#e53e3e,#3182ce)',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.6)',
-              transition: sliderDragging.current ? 'none' : 'top 0.05s'
-            }} />
-          </div>
-          <span style={{ color:'rgba(255,255,255,0.45)', fontSize:'0.6rem',
-                          writingMode:'vertical-rl', transform:'rotate(180deg)' }}>
-            Closer
-          </span>
-        </div>
-      )}
-
       {/* ── Canvas ── */}
       <Canvas
         camera={{ position: [0, 1.5, 9], fov: 50, near: 0.01 }}
@@ -616,13 +611,11 @@ export const MagnetSimulator: React.FC<{
         style={{ background: 'transparent' }}
       >
         <XR store={xrStore}>
-          {/* Lighting */}
           <hemisphereLight args={['#c9e8ff', '#ffe8c0', 1.1]} />
           <directionalLight position={[ 5,  8,  5]} intensity={2.2} castShadow />
           <directionalLight position={[-4,  3, -3]} intensity={0.9} />
           <pointLight       position={[ 0,  5,  0]} intensity={0.5} />
 
-          {/* Non-AR scene */}
           <IfInSessionMode deny="immersive-ar">
             <MagnetScene
               key={resetKey}
@@ -633,7 +626,6 @@ export const MagnetSimulator: React.FC<{
             />
           </IfInSessionMode>
 
-          {/* AR scene */}
           <IfInSessionMode allow="immersive-ar">
             <ARMagnetScene
               key={resetKey}
@@ -641,7 +633,6 @@ export const MagnetSimulator: React.FC<{
               isMagnetic={isMagnetic}
               onState={setSimState}
               resetKey={resetKey}
-              arOffset={arOffset}
             />
           </IfInSessionMode>
         </XR>
