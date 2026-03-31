@@ -2,7 +2,8 @@ import React, {
   useRef, useMemo, useState, useEffect, useCallback
 } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Text, useGLTF, OrbitControls } from '@react-three/drei';
+import { Text, useGLTF, OrbitControls, Billboard, Line } from '@react-three/drei';
+import { magneticObjects } from '../data/mockData';
 import {
   XR, createXRStore, useXRHitTest, IfInSessionMode, useXR
 } from '@react-three/xr';
@@ -320,12 +321,16 @@ function MagnetScene({ modelType, isMagnetic, onState, resetKey }: SceneProps) {
   );
 }
 
-// ─── AR scene (Free-Drag on Table Surface) ───────────────────────────────────
-interface ARSceneProps extends SceneProps {}
+// ─── AR scene (Static Object Observer + 3D Info Card) ───────────────────────
+interface ARSceneProps {
+  modelType:  string;
+  isMagnetic: boolean;
+  onState:    (s: SimState) => void;
+  resetKey:   number;
+}
 
 function ARMagnetScene({ modelType, isMagnetic, onState, resetKey }: ARSceneProps) {
   const session = useXR((s) => s.session);
-  const { camera } = useThree();
 
   const _mat  = useMemo(() => new Matrix4(),    []);
   const _pos  = useMemo(() => new Vector3(),    []);
@@ -339,15 +344,11 @@ function ARMagnetScene({ modelType, isMagnetic, onState, resetKey }: ARSceneProp
   const placedQuat    = useRef(new Quaternion());
 
   const objectPos     = useRef(new Vector3());
-  const magnetPos     = useRef(new Vector3());
-  const stateRef      = useRef<SimState>('idle');
-
   const objectRef     = useRef<Group>(null);
-  const magnetRef     = useRef<Group>(null);
   const reticleRef    = useRef<Group>(null);
   
-  const dragPlane   = useMemo(() => new Plane(new Vector3(0, 1, 0), 0), []);
-  const dragging    = useRef(false);
+  // Look up full object info for the annotation card
+  const objectData = useMemo(() => magneticObjects.find(o => o.modelType === modelType), [modelType]);
 
   // Tap to place
   useEffect(() => {
@@ -356,19 +357,11 @@ function ARMagnetScene({ modelType, isMagnetic, onState, resetKey }: ARSceneProp
       placedPos.current.copy(reticlePos.current);
       placedQuat.current.copy(reticleQuat.current);
       objectPos.current.copy(reticlePos.current);
-      
-      // Initial offset: Place magnet ~20cm to the right of the object
-      const offset = new Vector3(0.20, 0, 0);
-      offset.applyQuaternion(reticleQuat.current);
-      magnetPos.current.copy(reticlePos.current).add(offset);
-      
-      // Constrain dragging strictly to this horizontal table level
-      dragPlane.setComponents(0, 1, 0, -placedPos.current.y);
       setPlaced(true);
     };
     session.addEventListener('select', onSelect);
     return () => session.removeEventListener('select', onSelect);
-  }, [session, placed, dragPlane]);
+  }, [session, placed]);
 
   // Hit-test for reticle
   useXRHitTest((results, getWorldMatrix) => {
@@ -394,99 +387,18 @@ function ARMagnetScene({ modelType, isMagnetic, onState, resetKey }: ARSceneProp
   useEffect(() => {
     if (!placed) return;
     objectPos.current.copy(placedPos.current);
-    
-    const offset = new Vector3(0.20, 0, 0);
-    offset.applyQuaternion(placedQuat.current);
-    magnetPos.current.copy(placedPos.current).add(offset);
-    
-    stateRef.current = 'idle';
-    dragging.current = false;
     onState('idle');
   }, [resetKey, placed]); // eslint-disable-line
 
-  // Drag Listeners via raycast matching Window touch interaction
-  useEffect(() => {
-    if (!placed) return;
-    const raycaster = new Raycaster();
-    const hit       = new Vector3();
-
-    const onMove = (e: PointerEvent) => {
-      if (!dragging.current) return;
-      const ndc = new Vector2(
-        (e.clientX / window.innerWidth) * 2 - 1,
-        -(e.clientY / window.innerHeight) * 2 + 1
-      );
-      raycaster.setFromCamera(ndc, camera);
-      if (raycaster.ray.intersectPlane(dragPlane, hit)) {
-        // Enforce arbitrary 1.5m radius bound so user doesn't lose the magnet infinitely
-        if (hit.distanceTo(placedPos.current) < 1.5) {
-          magnetPos.current.copy(hit);
-        }
-      }
-    };
-    const onUp = () => { dragging.current = false; };
-
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup',   onUp);
-    return () => {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup',   onUp);
-    };
-  }, [camera, dragPlane, placed]);
-
-  useFrame((_, dt) => {
-    if (!placed || !objectRef.current || !magnetRef.current) return;
-
-    const dist = magnetPos.current.distanceTo(objectPos.current);
-    
-    const AR_SCALE  = 0.12;
-    const arAttract = ATTRACTION_RADIUS * AR_SCALE;
-    const arSnap    = SNAP_RADIUS * AR_SCALE;
-
-    let next: SimState = 'idle';
-    if (dist < arAttract) {
-      if (isMagnetic) {
-        if (dist < arSnap || stateRef.current === 'stuck') {
-          next = 'stuck';
-          // Snap slightly to the left side
-          const dir = magnetPos.current.clone().sub(objectPos.current).normalize();
-          const target = magnetPos.current.clone().sub(dir.multiplyScalar(0.12));
-          objectPos.current.lerp(target, 0.15);
-        } else {
-          next = 'attracting';
-          const speed = Math.min(0.08, 1.2 / (dist * dist));
-          objectPos.current.lerp(magnetPos.current, speed * dt * 60);
-        }
-      } else {
-        next = 'repelled';
-      }
-    }
-
-    // Always aim the magnet's N-pole slightly towards the object for good visual snapping UX
-    if (next === 'attracting' || next === 'stuck' || dragging.current) {
-        const targetQ = new Quaternion().setFromRotationMatrix(
-            new Matrix4().lookAt(magnetPos.current, objectPos.current, new Vector3(0,1,0))
-        );
-        // Bar magnet model rests along X axis by default, so lookAt needs a -90 deg rotation on Y
-        targetQ.multiply(new Quaternion().setFromAxisAngle(new Vector3(0,1,0), Math.PI/2));
-        magnetRef.current.quaternion.slerp(targetQ, 0.1);
-    }
-
+  useFrame(() => {
+    if (!placed || !objectRef.current) return;
     objectRef.current.position.copy(objectPos.current);
-    magnetRef.current.position.copy(magnetPos.current);
-
-    if (next !== stateRef.current) {
-      stateRef.current = next;
-      onState(next);
-    }
   });
 
   const AR_RENDER_SCALE = 0.12;
 
-  const onMagnetDown = useCallback((e: any) => {
-    e.stopPropagation();
-    dragging.current = true;
-  }, []);
+  // The card hovers 40cm above the physical target
+  const CARD_HEIGHT = 0.40;
 
   return (
     <>
@@ -497,15 +409,58 @@ function ARMagnetScene({ modelType, isMagnetic, onState, resetKey }: ARSceneProp
         </mesh>
       </group>
 
-      {placed && (
+      {placed && objectData && (
         <>
+          {/* Main 3D Model resting on the surface */}
           <group ref={objectRef} scale={AR_RENDER_SCALE}>
+             {/* Note: since AutoFitGLTF centers to Y=0, we bump the model up by 1 unit inside so it sits on the floor */}
             <AutoFitGLTF path={`/${modelType}/scene.gltf`} targetSize={1.6} />
-            {stateRef.current === 'stuck'    && <Sparks active />}
-            {stateRef.current === 'repelled' && <RepelRing active />}
           </group>
-          <group ref={magnetRef} scale={AR_RENDER_SCALE}>
-            <BarMagnet onPointerDown={onMagnetDown} />
+
+          {/* Floating Annotation Billboard pointing down to the object */}
+          <group position={[placedPos.current.x, placedPos.current.y, placedPos.current.z]}>
+            {/* The laser-pointer line extending from the object bounds up to the card */}
+            <Line
+              points={[[0, 0.05, 0], [0, CARD_HEIGHT - 0.05, 0]]}
+              color={isMagnetic ? "#00c878" : "#00f0ff"}
+              lineWidth={3}
+            />
+
+            <Billboard
+              follow={true}
+              lockX={false}
+              lockY={false}
+              lockZ={false}
+              position={[0, CARD_HEIGHT, 0]}
+            >
+              {/* Glass Card Background */}
+              <mesh position={[0, 0, -0.01]}>
+                <planeGeometry args={[0.60, 0.35]} />
+                <meshStandardMaterial color="#0a0a1a" transparent opacity={0.88} />
+              </mesh>
+              {/* Card Boundary Border */}
+              <Line
+                points={[[-0.30, 0.175, 0], [0.30, 0.175, 0], [0.30, -0.175, 0], [-0.30, -0.175, 0], [-0.30, 0.175, 0]]}
+                color={isMagnetic ? "#00c878" : "#4a5568"}
+                lineWidth={3}
+              />
+              
+              {/* Status Header */}
+              <Text position={[0, 0.10, 0]} fontSize={0.045} color={isMagnetic ? "#00c878" : "#ff4d4d"} anchorX="center" fontWeight="bold">
+                {isMagnetic ? "MAGNETIC" : "NON-MAGNETIC"}
+              </Text>
+              
+              {/* Object Name */}
+              <Text position={[0, 0.03, 0]} fontSize={0.06} color="#ffffff" anchorX="center" fontWeight="bold">
+                {objectData.label}
+              </Text>
+
+              {/* Description Body text */}
+              <Text position={[0, -0.06, 0]} fontSize={0.032} color="#cccccc" anchorX="center" textAlign="center" maxWidth={0.52} lineHeight={1.2}>
+                 {objectData.description}
+              </Text>
+
+            </Billboard>
           </group>
         </>
       )}
@@ -580,7 +535,7 @@ export const MagnetSimulator: React.FC<{
                       transform: 'translateX(-50%)', zIndex: 20,
                       fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)',
                       pointerEvents: 'none', whiteSpace: 'nowrap' }}>
-          Tap to place · slide magnet across surface
+          Tap on a flat surface to place object & read info
         </div>
       )}
 
