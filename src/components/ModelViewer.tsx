@@ -111,7 +111,7 @@ function ARPlacedModel({ children }: { children: React.ReactNode }) {
 }
 
 // ─── AR annotation wrapper (Renders Billboard above the placed model) ─────────
-function ARAnnotatedModel({ modelType, currentSlide, children }: { modelType: string, currentSlide: number, children: React.ReactNode }) {
+function ARAnnotatedModel({ modelType, currentSlide, setCurrentSlide, children }: { modelType: string, currentSlide: number, setCurrentSlide: any, children: React.ReactNode }) {
   const objectData = useMemo(() => magneticObjects.find(o => o.modelType === modelType), [modelType]);
   const CARD_HEIGHT = 0.40;
 
@@ -122,12 +122,23 @@ function ARAnnotatedModel({ modelType, currentSlide, children }: { modelType: st
   const slideText = objectData.annotations[currentSlide] || '';
   const totalSlides = objectData.annotations.length;
   
-  // To avoid dual navigation conflicts (3D AR buttons vs HTML buttons), we intentionally omit 3D buttons here because we are rendering universal DOM buttons again!
+  const canPrev = currentSlide > 0;
+  const canNext = currentSlide < totalSlides - 1;
+
+  const handlePrev = (e: any) => {
+    e.stopPropagation();
+    if (canPrev) setCurrentSlide((s: number) => s - 1);
+  };
+
+  const handleNext = (e: any) => {
+    e.stopPropagation();
+    if (canNext) setCurrentSlide((s: number) => s + 1);
+  };
 
   return (
     <ARPlacedModel>
       {/* 1. The original physical model (scaled down for AR table viewing) */}
-      <group scale={0.33}>
+      <group scale={0.15}>
         {children}
       </group>
 
@@ -162,7 +173,27 @@ function ARAnnotatedModel({ modelType, currentSlide, children }: { modelType: st
              {`Slide ${currentSlide + 1} of ${totalSlides}`}
            </Text>
 
-           {/* We removed the 3D buttons because the HTML DOM overlay buttons handle this universally now for Desktop + WebXR */}
+           {/* 3D AR Button: Previous */}
+           <group position={[-0.18, -0.22, 0.01]}>
+             <mesh onPointerDown={handlePrev}>
+               <planeGeometry args={[0.15, 0.06]} />
+               <meshStandardMaterial color={canPrev ? "#ffffff" : "#4a5568"} transparent opacity={canPrev ? 0.25 : 0.1} />
+             </mesh>
+             <Text position={[0, 0, 0.005]} fontSize={0.03} color={canPrev ? "#ffffff" : "#888888"} anchorX="center" anchorY="middle" fontWeight="bold" pointerEvents="none">
+               ← Prev
+             </Text>
+           </group>
+
+           {/* 3D AR Button: Next */}
+           <group position={[0.18, -0.22, 0.01]}>
+             <mesh onPointerDown={handleNext}>
+               <planeGeometry args={[0.15, 0.06]} />
+               <meshStandardMaterial color={canNext ? "#ffffff" : "#4a5568"} transparent opacity={canNext ? 0.25 : 0.1} />
+             </mesh>
+             <Text position={[0, 0, 0.005]} fontSize={0.03} color={canNext ? "#ffffff" : "#888888"} anchorX="center" anchorY="middle" fontWeight="bold" pointerEvents="none">
+               Next →
+             </Text>
+           </group>
         </Billboard>
       </group>
     </ARPlacedModel>
@@ -474,7 +505,7 @@ export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
 
           {/* ── Inside AR: hit-test placement + 3D Annotations ── */}
           <IfInSessionMode allow="immersive-ar">
-            <ARAnnotatedModel modelType={modelType} currentSlide={currentSlide}>
+            <ARAnnotatedModel modelType={modelType} currentSlide={currentSlide} setCurrentSlide={setCurrentSlide}>
               <SceneModel modelType={modelType} currentSlide={currentSlide} />
             </ARAnnotatedModel>
           </IfInSessionMode>
