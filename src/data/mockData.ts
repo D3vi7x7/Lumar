@@ -35,6 +35,13 @@ export const encyclopediaData: Record<string, SubjectData> = {
             description: 'A magnetic field is the invisible region around a magnet where its force is felt. Field lines flow from the North pole to the South pole outside the magnet, and the lines are closest where the field is strongest.',
             modelType: 'magnet',
             funFact: 'MRI machines in hospitals use extremely powerful magnetic fields — about 60,000 times stronger than the Earth\'s magnetic field!'
+          },
+          {
+            id: 'electromagnetism',
+            title: 'Electromagnetism',
+            description: 'Unlike a permanent magnet (like a fridge magnet), an electromagnet is temporary. By running electricity through a coiled wire wrapped around an iron core, we turn the iron into a powerful magnet. Turn off the electricity, and the magnetism completely disappears. Assemble the solenoid below to understand how!',
+            modelType: 'electromagnetism',
+            funFact: 'Electromagnets are deeply integrated in everyday technology: doorbells, electric motors, MAGLEV trains, and speakers.'
           }
         ]
       }
@@ -124,6 +131,19 @@ export const magneticObjects = [
       'Material Composition: Wood is composed of organic cellulose and lignin fibers.',
       'Magnetic Properties: Organic carbon-based structures like wood are completely non-magnetic (technically diamagnetic, which means they weakly repel, but too weakly to notice!).',
       'Interaction: The wood remains completely unaffected by the magnet.'
+    ]
+  },
+  {
+    id: 'electromagnetism',
+    label: 'The Solenoid',
+    modelType: 'electromagnetism',
+    isMagnetic: true,
+    description: 'An electromagnet turns electricity into magnetism.',
+    annotations: [
+      'The Core: We begin with a solid cylindrical Iron Core sitting freely in space between 2 heavy power units. We selected Iron because it is a strong ferromagnetic material.',
+      'The Coil: Next, highly conductive copper wire is vigorously looped around the iron core. A coil of wire like this is called a "Solenoid". The wire connects to the power unit terminals.',
+      'Electricity: The power supply activates! Electricity shoots loudly through the copper loops. An electric current intrinsically creates a magnetic field around itself—and winding it into a tight coil enormously concentrates those lines of force!',
+      'Interaction: THE ELECTROMAGNET ACTIVATES! The combined power of the focused electricity and the aligned iron core generates a massive, glowing magnetic field, ripping nearby iron nails forcefully into its orbit!'
     ]
   }
 ];
