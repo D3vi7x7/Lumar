@@ -1,7 +1,7 @@
 import React, { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF, Text } from '@react-three/drei';
-import { Vector3, CatmullRomCurve3, Group, MathUtils, Mesh, MeshBasicMaterial, CanvasTexture, RepeatWrapping } from 'three';
+import { Vector3, CatmullRomCurve3, Group, MathUtils, Mesh, CanvasTexture, RepeatWrapping } from 'three';
 
 // ─── Magnet Wrapper ────────────────────────────────────────────────────────
 const BarMagnet = ({ position, rotation = [0, 80, 0], scale = 7.5 }: any) => {
