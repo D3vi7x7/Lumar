@@ -185,7 +185,7 @@ function ARPlacedModel({ children }: { children: React.ReactNode }) {
 }
 
 // ─── AR annotation wrapper (Renders Billboard above the placed model) ─────────
-function ARAnnotatedModel({ modelType, currentSlide, setCurrentSlide, children }: { modelType: string, currentSlide: number, setCurrentSlide: any, children: React.ReactNode }) {
+function ARAnnotatedModel({ modelType, currentSlide, setCurrentSlide, handleReplayAudio, children }: { modelType: string, currentSlide: number, setCurrentSlide: any, handleReplayAudio?: () => void, children: React.ReactNode }) {
   const objectData = useMemo(() => {
     const obj = [...magneticObjects, ...magnetInteractionObjects].find(o => o.modelType === modelType);
     return obj;
@@ -258,6 +258,17 @@ function ARAnnotatedModel({ modelType, currentSlide, setCurrentSlide, children }
              </mesh>
              <Text position={[0, 0, 0.005]} fontSize={0.024} color={canPrev ? "#ffffff" : "#888888"} anchorX="center" anchorY="middle" fontWeight="bold" pointerEvents="none">
                ← Prev
+             </Text>
+           </group>
+
+           {/* 3D AR Button: Replay Audio */}
+           <group position={[0, -0.15, 0.01]}>
+             <mesh onPointerDown={(e) => { e.stopPropagation(); handleReplayAudio && handleReplayAudio(); }}>
+               <planeGeometry args={[0.13, 0.05]} />
+               <meshStandardMaterial color="#ffffff" transparent opacity={0.25} />
+             </mesh>
+             <Text position={[0, 0, 0.005]} fontSize={0.024} color="#ffffff" anchorX="center" anchorY="middle" fontWeight="bold" pointerEvents="none">
+               ↻ Replay
              </Text>
            </group>
 
@@ -482,13 +493,38 @@ export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
   const isSolenoid = modelType === 'electromagnetism';
   const isInteraction = modelType === 'attraction' || modelType === 'repulsion';
 
-  const magneticObj = useMemo(() => [...magneticObjects, ...magnetInteractionObjects].find(o => o.modelType === modelType), [modelType]);
+  const magneticObj = useMemo(() => [...magneticObjects, ...magnetInteractionObjects].find(o => o.modelType === modelType) as any, [modelType]);
   const hasAnnotations = !!(magneticObj && magneticObj.annotations && magneticObj.annotations.length > 0);
   
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isInAR, setIsInAR] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => setCurrentSlide(0), [modelType]);
+
+  // Handle Automatic Voice Narration Playback
+  useEffect(() => {
+    const src = magneticObj?.audioNarrations?.[currentSlide];
+    if (src) {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      audioRef.current = new Audio(src);
+      audioRef.current.play().catch(e => console.warn('Audio auto-play blocked by browser. User needs to tap first.', e));
+    }
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+  }, [magneticObj, currentSlide]);
+
+  const handleReplayAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(e => console.warn('Replay blocked', e));
+    }
+  };
 
   useEffect(() => {
     const unsub = (store as any).subscribe((state: any) => {
@@ -513,6 +549,16 @@ export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
           >
             ← Previous
           </button>
+          
+          {magneticObj?.audioNarrations?.[currentSlide] && (
+            <button
+              onClick={handleReplayAudio}
+              style={{ pointerEvents: 'auto', padding: '14px 24px', borderRadius: '30px', background: 'rgba(0,180,255,0.25)', border: '1px solid rgba(0,240,255,0.5)', color: 'white', fontWeight: 'bold', fontSize: '1.05rem', cursor: 'pointer', backdropFilter: 'blur(8px)', boxShadow: '0 4px 15px rgba(0,0,0,0.5)' }}
+            >
+              ↻ Replay Audio
+            </button>
+          )}
+
           <button
             onClick={handleNext}
             disabled={currentSlide === (magneticObj!.annotations!.length - 1)}
@@ -585,7 +631,7 @@ export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
 
           {/* ── Inside AR: hit-test placement + 3D Annotations ── */}
           <IfInSessionMode allow="immersive-ar">
-            <ARAnnotatedModel modelType={modelType} currentSlide={currentSlide} setCurrentSlide={setCurrentSlide}>
+            <ARAnnotatedModel modelType={modelType} currentSlide={currentSlide} setCurrentSlide={setCurrentSlide} handleReplayAudio={handleReplayAudio}>
               <SceneModel modelType={modelType} currentSlide={currentSlide} />
             </ARAnnotatedModel>
           </IfInSessionMode>

@@ -167,6 +167,12 @@ export const magnetInteractionObjects = [
       'Opposites Align: Notice how the South pole of Magnet A faces the North pole of Magnet B. Opposite poles attract each other.',
       'Magnetic Field Interaction: The magnetic field lines (flowing from North to South) perfectly link the two magnets together, creating a unified flow of energy that pulls them toward each other.',
       'Force of Attraction: When released, the magnetic attraction forcefully snaps them together into one unified magnetic structure!'
+    ],
+    audioNarrations: [
+      '/voice/attractionRepulsion/v1.mp3',
+      '/voice/attractionRepulsion/v2.mp3',
+      '/voice/attractionRepulsion/v3.mp3',
+      '/voice/attractionRepulsion/v4.mp3'
     ]
   },
   {
