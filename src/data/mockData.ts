@@ -42,6 +42,13 @@ export const encyclopediaData: Record<string, SubjectData> = {
             description: 'Unlike a permanent magnet (like a fridge magnet), an electromagnet is temporary. By running electricity through a coiled wire wrapped around an iron core, we turn the iron into a powerful magnet. Turn off the electricity, and the magnetism completely disappears. Assemble the solenoid below to understand how!',
             modelType: 'electromagnetism',
             funFact: 'Electromagnets are deeply integrated in everyday technology: doorbells, electric motors, MAGLEV trains, and speakers.'
+          },
+          {
+            id: 'attraction-repulsion',
+            title: 'Attraction & Repulsion',
+            description: 'Magnets exert forces on each other! When bringing two magnets close together, their magnetic fields interact. Depending on which poles face each other, the invisible magnetic field lines will either pull the magnets tightly together or snap them violently apart.',
+            modelType: 'attraction', 
+            funFact: 'The repulsion force of extremely powerful magnets is so incredibly strong that it is used to levitate entire MAGLEV trains above the tracks, completely eliminating friction allowing them to travel at over 375 mph!'
           }
         ]
       }
@@ -144,6 +151,35 @@ export const magneticObjects = [
       'The Coil: Next, highly conductive copper wire is vigorously looped around the iron core. A coil of wire like this is called a "Solenoid". The wire connects to the power unit terminals.',
       'Electricity: The power supply activates! Electricity shoots loudly through the copper loops. An electric current intrinsically creates a magnetic field around itself—and winding it into a tight coil enormously concentrates those lines of force!',
       'Interaction: THE ELECTROMAGNET ACTIVATES! The combined power of the focused electricity and the aligned iron core generates a massive, glowing magnetic field, ripping nearby iron nails forcefully into its orbit!'
+    ]
+  }
+];
+
+export const magnetInteractionObjects = [
+  {
+    id: 'attraction',
+    label: 'Magnetic Attraction',
+    modelType: 'attraction',
+    isMagnetic: true,
+    description: 'Opposite poles attract each other.',
+    annotations: [
+      'Two Magnets: We have two permanent Alnico bar magnets. Magnet A is on the left, and Magnet B is on the right.',
+      'Opposites Align: Notice how the South pole of Magnet A faces the North pole of Magnet B. Opposite poles attract each other.',
+      'Magnetic Field Interaction: The magnetic field lines (flowing from North to South) perfectly link the two magnets together, creating a unified flow of energy that pulls them toward each other.',
+      'Force of Attraction: When released, the magnetic attraction forcefully snaps them together into one unified magnetic structure!'
+    ]
+  },
+  {
+    id: 'repulsion',
+    label: 'Magnetic Repulsion',
+    modelType: 'repulsion',
+    isMagnetic: true,
+    description: 'Like poles repel each other.',
+    annotations: [
+      'Two Magnets: Here are the exact same two permanent Alnico bar magnets. Let\'s see what happens when we flip Magnet B around.',
+      'Like Poles Clash: This time, the North pole of Magnet A directly faces the North pole of Magnet B. Like poles violently repel each other.',
+      'Magnetic Field Conflict: Examine the magnetic field lines! Because magnetic field lines always flow OUT of the North pole, they violently clash in the middle, squishing together and pushing actively against each other.',
+      'Force of Repulsion: The resulting energetic tension creates an invisible wall of force that physically shoves Magnet B backward!'
     ]
   }
 ];

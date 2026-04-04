@@ -3,8 +3,9 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Stars, useGLTF, useAnimations, Ring, Billboard, Line, Text } from '@react-three/drei';
 import { XR, createXRStore, useXRHitTest, IfInSessionMode, useXR } from '@react-three/xr';
 import { Group, Matrix4, Vector3, Quaternion, Euler, Box3 } from 'three';
-import { magneticObjects } from '../data/mockData';
+import { magneticObjects, magnetInteractionObjects } from '../data/mockData';
 import { SolenoidModel } from './SolenoidModel';
+import { InteractionModel } from './InteractionModel';
 
 const store = createXRStore();
 
@@ -185,7 +186,10 @@ function ARPlacedModel({ children }: { children: React.ReactNode }) {
 
 // ─── AR annotation wrapper (Renders Billboard above the placed model) ─────────
 function ARAnnotatedModel({ modelType, currentSlide, setCurrentSlide, children }: { modelType: string, currentSlide: number, setCurrentSlide: any, children: React.ReactNode }) {
-  const objectData = useMemo(() => magneticObjects.find(o => o.modelType === modelType), [modelType]);
+  const objectData = useMemo(() => {
+    const obj = [...magneticObjects, ...magnetInteractionObjects].find(o => o.modelType === modelType);
+    return obj;
+  }, [modelType]);
   const CARD_HEIGHT = 0.40;
 
   if (!objectData || !objectData.annotations) {
@@ -224,46 +228,46 @@ function ARAnnotatedModel({ modelType, currentSlide, setCurrentSlide, children }
         <Billboard follow={true}>
            {/* Glass Background */}
            <mesh position={[0, 0, -0.01]}>
-             <planeGeometry args={[0.75, 0.45]} />
+             <planeGeometry args={[0.65, 0.40]} />
              <meshStandardMaterial color="#0a0a1a" transparent opacity={0.88} />
            </mesh>
            {/* Colored Border */}
            <Line
-             points={[[-0.375, 0.225, 0], [0.375, 0.225, 0], [0.375, -0.225, 0], [-0.375, -0.225, 0], [-0.375, 0.225, 0]]}
+             points={[[-0.325, 0.20, 0], [0.325, 0.20, 0], [0.325, -0.20, 0], [-0.325, -0.20, 0], [-0.325, 0.20, 0]]}
              color={objectData.isMagnetic ? "#00c878" : "#8892b0"}
              lineWidth={3}
            />
-           <Text position={[0, 0.15, 0]} fontSize={0.055} color={objectData.isMagnetic ? "#00c878" : "#ff4d4d"} anchorX="center" fontWeight="bold">
+           <Text position={[0, 0.14, 0]} fontSize={0.045} color={objectData.isMagnetic ? "#00c878" : "#ff4d4d"} anchorX="center" fontWeight="bold">
              {objectData.isMagnetic ? "MAGNETIC" : "NON-MAGNETIC"}
            </Text>
-           <Text position={[0, 0.08, 0]} fontSize={0.065} color="#ffffff" anchorX="center" fontWeight="bold">
+           <Text position={[0, 0.08, 0]} fontSize={0.055} color="#ffffff" anchorX="center" fontWeight="bold">
              {objectData.label}
            </Text>
-           <Text position={[0, -0.05, 0]} fontSize={0.038} color="#cccccc" anchorX="center" textAlign="center" maxWidth={0.68} lineHeight={1.2}>
+           <Text position={[0, -0.02, 0]} fontSize={0.028} color="#cccccc" anchorX="center" textAlign="center" maxWidth={0.58} lineHeight={1.2}>
              {slideText}
            </Text>
-           <Text position={[0, -0.15, 0]} fontSize={0.028} color="#888888" anchorX="center">
+           <Text position={[0, -0.11, 0]} fontSize={0.022} color="#888888" anchorX="center">
              {`Slide ${currentSlide + 1} of ${totalSlides}`}
            </Text>
 
            {/* 3D AR Button: Previous */}
-           <group position={[-0.18, -0.22, 0.01]}>
+           <group position={[-0.16, -0.15, 0.01]}>
              <mesh onPointerDown={handlePrev}>
-               <planeGeometry args={[0.15, 0.06]} />
+               <planeGeometry args={[0.13, 0.05]} />
                <meshStandardMaterial color={canPrev ? "#ffffff" : "#4a5568"} transparent opacity={canPrev ? 0.25 : 0.1} />
              </mesh>
-             <Text position={[0, 0, 0.005]} fontSize={0.03} color={canPrev ? "#ffffff" : "#888888"} anchorX="center" anchorY="middle" fontWeight="bold" pointerEvents="none">
+             <Text position={[0, 0, 0.005]} fontSize={0.024} color={canPrev ? "#ffffff" : "#888888"} anchorX="center" anchorY="middle" fontWeight="bold" pointerEvents="none">
                ← Prev
              </Text>
            </group>
 
            {/* 3D AR Button: Next */}
-           <group position={[0.18, -0.22, 0.01]}>
+           <group position={[0.16, -0.15, 0.01]}>
              <mesh onPointerDown={handleNext}>
-               <planeGeometry args={[0.15, 0.06]} />
+               <planeGeometry args={[0.13, 0.05]} />
                <meshStandardMaterial color={canNext ? "#ffffff" : "#4a5568"} transparent opacity={canNext ? 0.25 : 0.1} />
              </mesh>
-             <Text position={[0, 0, 0.005]} fontSize={0.03} color={canNext ? "#ffffff" : "#888888"} anchorX="center" anchorY="middle" fontWeight="bold" pointerEvents="none">
+             <Text position={[0, 0, 0.005]} fontSize={0.024} color={canNext ? "#ffffff" : "#888888"} anchorX="center" anchorY="middle" fontWeight="bold" pointerEvents="none">
                Next →
              </Text>
            </group>
@@ -457,6 +461,8 @@ function yOffset(modelType: string) {
 // ─── Model selector (renders correct model for modelType) ────────────────────
 function SceneModel({ modelType, currentSlide = 0 }: { modelType: string, currentSlide?: number }) {
   if (modelType === 'electromagnetism') return <SolenoidModel currentSlide={currentSlide} />;
+  if (modelType === 'attraction') return <InteractionModel type="attraction" currentSlide={currentSlide} />;
+  if (modelType === 'repulsion') return <InteractionModel type="repulsion" currentSlide={currentSlide} />;
   if (modelType === 'solar-system') return <SolarSystemModel />;
   if (modelType === 'atom') return <AtomModel />;
   if (modelType === 'h2o') return <WaterMoleculeModel />;
@@ -474,8 +480,9 @@ export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
   const isSolar = modelType === 'solar-system';
   const isMagnet = modelType === 'magnet';
   const isSolenoid = modelType === 'electromagnetism';
+  const isInteraction = modelType === 'attraction' || modelType === 'repulsion';
 
-  const magneticObj = useMemo(() => magneticObjects.find(o => o.modelType === modelType), [modelType]);
+  const magneticObj = useMemo(() => [...magneticObjects, ...magnetInteractionObjects].find(o => o.modelType === modelType), [modelType]);
   const hasAnnotations = !!(magneticObj && magneticObj.annotations && magneticObj.annotations.length > 0);
   
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -565,7 +572,7 @@ export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
           {/* ── Outside AR: fixed position, orbit controls ── */}
           <IfInSessionMode deny="immersive-ar">
             <OrbitControls
-              autoRotate={!isSolar && !isMagnet && !isSolenoid}
+              autoRotate={!isSolar && !isMagnet && !isSolenoid && !isInteraction}
               autoRotateSpeed={0.5}
               enablePan={false}
               minDistance={0.5}

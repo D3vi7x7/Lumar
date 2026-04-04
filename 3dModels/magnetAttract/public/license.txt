@@ -1,0 +1,8 @@
+Model Information:
+* title:	Alnico rectangular bar magnet
+* source:	https://sketchfab.com/3d-models/alnico-rectangular-bar-magnet-d6764405fb174b4b82063a56ffd3d63d
+* author:	famousandfaded (https://sketchfab.com/famousandfaded)
+
+Model License:
+* license type:	SKETCHFAB Standard (https://sketchfab.com/licenses)
+* requirements:	Under basic restrictions, use worldwide, on all types of media, commercially or not, and in all types of derivative works
