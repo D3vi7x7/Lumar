@@ -65,6 +65,10 @@ function ARPlacedModel({ children }: { children: React.ReactNode }) {
   const reticlePos = useRef(new Vector3());
   const reticleQuat = useRef(new Quaternion());
 
+  // Interaction Refs for Pinch/Zoom & Rotate
+  const interactionScale = useRef(1);
+  const interactionRotY = useRef(0);
+
   const handlePositionUpdate = useCallback((pos: Vector3, quat: Quaternion) => {
     reticlePos.current.copy(pos);
     reticleQuat.current.copy(quat);
@@ -89,14 +93,83 @@ function ARPlacedModel({ children }: { children: React.ReactNode }) {
     if (!groupRef.current) return;
     if (placed) {
       groupRef.current.position.copy(placedPos.current);
-      // Keep upright — only copy Y rotation from hit surface
+      // Keep upright — only copy Y rotation from hit surface but add our drag-rotated Y angle
       const euler = new Euler().setFromQuaternion(placedQuat.current, 'YXZ');
-      groupRef.current.rotation.set(0, euler.y, 0);
+      groupRef.current.rotation.set(0, euler.y + interactionRotY.current, 0);
+      
+      // Apply pinch-to-zoom scaling
+      groupRef.current.scale.set(interactionScale.current, interactionScale.current, interactionScale.current);
+      
       groupRef.current.visible = true;
     } else {
       groupRef.current.visible = false;
     }
   });
+
+  // Global Touch Listeners for Pinch (Zoom) and Pan (Rotate)
+  React.useEffect(() => {
+    if (!placed) return;
+
+    let initialDist = 0;
+    let initialScale = 1;
+    let isDragging = false;
+    let lastX = 0;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        initialDist = Math.sqrt(dx * dx + dy * dy);
+        initialScale = interactionScale.current;
+        isDragging = false;
+      } else if (e.touches.length === 1) {
+        // Only start drag if we aren't tapping a button (avoid consuming button taps)
+        if ((e.target as HTMLElement).tagName !== 'BUTTON') {
+            isDragging = true;
+            lastX = e.touches[0].clientX;
+        }
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (initialDist > 0) {
+            const scaleFactor = dist / initialDist;
+            // Clamp scaling between 0.1x to 5x of the original
+            interactionScale.current = Math.max(0.1, Math.min(initialScale * scaleFactor, 5));
+        }
+      } else if (e.touches.length === 1 && isDragging) {
+        const dx = e.touches[0].clientX - lastX;
+        // Adjust drag speed here (0.01 is a good default for screen-space to radians)
+        interactionRotY.current += dx * 0.01;
+        lastX = e.touches[0].clientX;
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) initialDist = 0;
+      if (e.touches.length === 0) isDragging = false;
+      if (e.touches.length === 1) {
+        isDragging = true;
+        lastX = e.touches[0].clientX;
+      }
+    };
+
+    // Attach passive: false so we can track seamlessly even if browsers try to intervene
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: true });
+    window.addEventListener('touchend', onTouchEnd);
+
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [placed]);
+
 
   return (
     <>
