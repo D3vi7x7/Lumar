@@ -30,7 +30,8 @@ const FlashLight = ({ position, rotation, scale = 0.5 }: any) => {
   const { nodes, materials } = useGLTF('/lightSrc/scene.gltf') as any;
   return (
     <group position={position} rotation={rotation} scale={scale} dispose={null}>
-      <group scale={0.01}>
+      {/* Shift geometry by Z=+115.5 before the 0.01 scale to perfectly center the pivot (-323 to 92 -> center is -115.5) */}
+      <group scale={0.01} position={[0, 0, 1.155]}>
         <mesh
           castShadow
           receiveShadow
@@ -69,17 +70,17 @@ export const LightRayModel: React.FC<{ currentSlide: number }> = ({ currentSlide
     // Determine target state
     if (currentSlide === 0) {
       targetLength.current = 0;
+      currentLength.current = MathUtils.damp(currentLength.current, targetLength.current, 3, delta);
     } else if (currentSlide === 1) {
       targetLength.current = 20; 
+      currentLength.current = MathUtils.damp(currentLength.current, targetLength.current, 3, delta);
     } else {
-      targetLength.current = 150; // Vastly far out into the distance
+      // Infinity & Speed of Light! Expand rapidly forever without any clamping target.
+      currentLength.current += delta * 200; // 200 virtual units per second perpetually
     }
-
+    
     const isSpeedOfLight = currentSlide >= 3;
     const speed = isSpeedOfLight ? 15.0 : 3.0; // Much faster UV shift for speed of light
-
-    // Animate Extension
-    currentLength.current = MathUtils.damp(currentLength.current, targetLength.current, 3, delta);
     
     // Animate Intensity Fade
     const targetOpacity = currentSlide === 0 ? 0 : 1;
@@ -110,11 +111,12 @@ export const LightRayModel: React.FC<{ currentSlide: number }> = ({ currentSlide
 
   return (
     <group scale={0.2}>
-      {/* Flashlight rotated 180 degrees and shifted so its new emitting face properly aligns with the ray origin */}
-      <group position={[0, 0, -3.2]}>
+      {/* Flashlight rotated so its front (base) points down negative Z. 
+          Its pivot is now perfectly centered at 0,0,0! */}
+      <group position={[0, 0, 0]}>
         <FlashLight rotation={[0, Math.PI, 0]} />
         
-        {/* AR Source Annotation */}
+        {/* AR Source Annotation over the centered torch */}
         {currentSlide >= 1 && (
           <group position={[0, 3.5, 0]}>
             <Line points={[[0, 0, 0], [0, -2.5, 0]]} color="#00f0ff" lineWidth={2} alphaTest={0.5} />
@@ -126,7 +128,9 @@ export const LightRayModel: React.FC<{ currentSlide: number }> = ({ currentSlide
       </group>
 
       {/* Volumetric Ray System */}
-      <group position={[0, 0, -3.4]}>
+      {/* Centered flashlight boundaries span from -2.1 to +2.1. 
+          Since we rotated it 180, front is at -2.1. Ray emits exactly from there. */}
+      <group position={[0, 0, -2.1]}>
         
         {/* AR Ray Annotation */}
         {currentSlide >= 1 && (

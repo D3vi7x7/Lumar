@@ -66,6 +66,13 @@ export const encyclopediaData: Record<string, SubjectData> = {
             description: 'A light ray is an idealized model of light, drawn as a straight line indicating the path of energy propagation. Explore the emitter below to discover how light inherently travels through the vacuum of space.',
             modelType: 'light-ray',
             funFact: 'Nothing in the universe can travel faster than the speed of light in a vacuum!'
+          },
+          {
+            id: 'reflection',
+            title: 'Reflection',
+            description: 'When light waves encounter a surface or boundary that does not absorb the energy, it bounces away. Based on the microscopic texture of the surface, reflection can yield crystal clear virtual images or scatter chaotic light in all directions.',
+            modelType: 'reflection',
+            funFact: 'Mirrors are made by applying a microscopic layer of highly reflective silver or aluminum directly to the back of a perfectly smooth pane of glass!'
           }
         ]
       }
@@ -219,6 +226,21 @@ export const lightRayObjects = [
       'Rectilinear Propagation: See the path? Light inherently travels in perfectly straight lines. It will never curve or bend on its own unless it strikes matter or enters a separate medium like water/glass.',
       'Infinity: Unlike physical projectiles (like a tossed ball) which eventually slow down and fall, a light ray traveling through empty space will keep propagating straight ahead forever.',
       'Speed of Light: Light rays are the fastest moving entity in the universe, rocketing at a staggering 299,792,458 meters per second in a vacuum!'
+    ]
+  }
+];
+
+export const reflectionObjects = [
+  {
+    id: 'reflection-sim',
+    label: 'Angles of Reflection',
+    modelType: 'reflection',
+    isMagnetic: false,
+    description: 'A demonstration calculating specular limits, diffuse bounds, and virtual raytracing.',
+    annotations: [
+      'Specular Reflection: This flat pane is incredibly smooth. When a consolidated photon beam strikes it, it rebounds violently together in a single coordinated beam! The angle the light hits the floor perfectly mirrors the angle it bounces outward.',
+      'Diffuse Scattering: The surface texture has decayed! It is now microscopically rocky and uneven. When the coordinated beams impact, they scatter chaotically in a million completely different directions. This is how we see most non-glowing objects in the real world!',
+      'Virtual Images (Mirrors): Our brains assume light only travels in straight lines! When you look at perfectly bouncing specular light from a mirror, your brain mathematically traces those bouncing rays backward in a straight line, creating the "Virtual" illusion that the Rubber Duck is physically standing behind the glass!'
     ]
   }
 ];

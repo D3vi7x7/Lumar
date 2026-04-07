@@ -1,0 +1,11 @@
+Model Information:
+* title:	Floor Concrete
+* source:	https://sketchfab.com/3d-models/floor-concrete-da0bf33a0e2c4a1da947e490b80422c1
+* author:	Forest Run Forever (https://sketchfab.com/2w)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Floor Concrete" (https://sketchfab.com/3d-models/floor-concrete-da0bf33a0e2c4a1da947e490b80422c1) by Forest Run Forever (https://sketchfab.com/2w) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

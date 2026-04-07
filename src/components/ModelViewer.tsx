@@ -3,10 +3,11 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Stars, useGLTF, useAnimations, Ring, Billboard, Line, Text } from '@react-three/drei';
 import { XR, createXRStore, useXRHitTest, IfInSessionMode, useXR } from '@react-three/xr';
 import { Group, Matrix4, Vector3, Quaternion, Euler, Box3 } from 'three';
-import { magneticObjects, magnetInteractionObjects, lightRayObjects } from '../data/mockData';
+import { magneticObjects, magnetInteractionObjects, lightRayObjects, reflectionObjects } from '../data/mockData';
 import { SolenoidModel } from './SolenoidModel';
 import { InteractionModel } from './InteractionModel';
 import { LightRayModel } from './LightRayModel';
+import { ReflectionModel } from './ReflectionModel';
 
 const store = createXRStore();
 
@@ -188,7 +189,7 @@ function ARPlacedModel({ children }: { children: React.ReactNode }) {
 // ─── AR annotation wrapper (Renders Billboard above the placed model) ─────────
 function ARAnnotatedModel({ modelType, currentSlide, setCurrentSlide, handleReplayAudio, children }: { modelType: string, currentSlide: number, setCurrentSlide: any, handleReplayAudio?: () => void, children: React.ReactNode }) {
   const objectData = useMemo(() => {
-    const obj = [...magneticObjects, ...magnetInteractionObjects, ...lightRayObjects].find(o => o.modelType === modelType);
+    const obj = [...magneticObjects, ...magnetInteractionObjects, ...lightRayObjects, ...reflectionObjects].find(o => o.modelType === modelType);
     return obj;
   }, [modelType]);
   const CARD_HEIGHT = 0.40;
@@ -235,11 +236,11 @@ function ARAnnotatedModel({ modelType, currentSlide, setCurrentSlide, handleRepl
             {/* Colored Border */}
            <Line
              points={[[-0.325, 0.20, 0], [0.325, 0.20, 0], [0.325, -0.20, 0], [-0.325, -0.20, 0], [-0.325, 0.20, 0]]}
-             color={(objectData as any).isMagnetic === false ? (modelType === 'light-ray' ? "#ffcc00" : "#ff4d4d") : "#00c878"}
+             color={(objectData as any).isMagnetic === false ? ((modelType === 'light-ray' || modelType === 'reflection') ? "#ffcc00" : "#ff4d4d") : "#00c878"}
              lineWidth={3}
            />
-           <Text position={[0, 0.14, 0]} fontSize={0.045} color={(objectData as any).isMagnetic === false ? (modelType === 'light-ray' ? "#ffcc00" : "#ff4d4d") : "#00c878"} anchorX="center" fontWeight="bold">
-             {modelType === 'light-ray' ? "OPTICS" : ((objectData as any).isMagnetic ? "MAGNETIC" : "NON-MAGNETIC")}
+           <Text position={[0, 0.14, 0]} fontSize={0.045} color={(objectData as any).isMagnetic === false ? ((modelType === 'light-ray' || modelType === 'reflection') ? "#ffcc00" : "#ff4d4d") : "#00c878"} anchorX="center" fontWeight="bold">
+             {(modelType === 'light-ray' || modelType === 'reflection') ? "OPTICS" : ((objectData as any).isMagnetic ? "MAGNETIC" : "NON-MAGNETIC")}
            </Text>
            <Text position={[0, 0.08, 0]} fontSize={0.055} color="#ffffff" anchorX="center" fontWeight="bold">
              {objectData.label}
@@ -455,7 +456,7 @@ function makeGLTF(path: string, rotationSpeed = 0.003, targetSize = 2): React.FC
 const NailsModel      = makeGLTF('/nails/scene.gltf');
 const TmtBarModel     = makeGLTF('/tmtBar/scene.gltf');
 const EraserModel     = makeGLTF('/eraser/scene.gltf');
-const RubberDuckModel = makeGLTF('/rubberDuck/scene.gltf');
+export const RubberDuckModel = makeGLTF('/rubberDuck/scene.gltf');
 const WoodModel       = makeGLTF('/wood/scene.gltf');
 
 useGLTF.preload('/nails/scene.gltf');
@@ -476,6 +477,7 @@ function SceneModel({ modelType, currentSlide = 0 }: { modelType: string, curren
   if (modelType === 'attraction') return <InteractionModel type="attraction" currentSlide={currentSlide} />;
   if (modelType === 'repulsion') return <InteractionModel type="repulsion" currentSlide={currentSlide} />;
   if (modelType === 'light-ray') return <LightRayModel currentSlide={currentSlide} />;
+  if (modelType === 'reflection') return <ReflectionModel currentSlide={currentSlide} />;
   if (modelType === 'solar-system') return <SolarSystemModel />;
   if (modelType === 'atom') return <AtomModel />;
   if (modelType === 'h2o') return <WaterMoleculeModel />;
@@ -495,8 +497,9 @@ export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
   const isSolenoid = modelType === 'electromagnetism';
   const isInteraction = modelType === 'attraction' || modelType === 'repulsion';
   const isLight = modelType === 'light-ray';
+  const isReflection = modelType === 'reflection';
 
-  const magneticObj = useMemo(() => [...magneticObjects, ...magnetInteractionObjects, ...lightRayObjects].find(o => o.modelType === modelType) as any, [modelType]);
+  const magneticObj = useMemo(() => [...magneticObjects, ...magnetInteractionObjects, ...lightRayObjects, ...reflectionObjects].find(o => o.modelType === modelType) as any, [modelType]);
   const hasAnnotations = !!(magneticObj && magneticObj.annotations && magneticObj.annotations.length > 0);
   
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -621,7 +624,7 @@ export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
           {/* ── Outside AR: fixed position, orbit controls ── */}
           <IfInSessionMode deny="immersive-ar">
             <OrbitControls
-              autoRotate={!isSolar && !isMagnet && !isSolenoid && !isInteraction && !isLight}
+              autoRotate={!isSolar && !isMagnet && !isSolenoid && !isInteraction && !isLight && !isReflection}
               autoRotateSpeed={0.5}
               enablePan={false}
               minDistance={0.5}
