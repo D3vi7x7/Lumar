@@ -51,6 +51,23 @@ export const encyclopediaData: Record<string, SubjectData> = {
             funFact: 'The repulsion force of extremely powerful magnets is so incredibly strong that it is used to levitate entire MAGLEV trains above the tracks, completely eliminating friction allowing them to travel at over 375 mph!'
           }
         ]
+      },
+      {
+        id: 'light-reflection-shadows',
+        title: 'Light, Reflection & Shadows',
+        description: 'Light makes the mechanics of vision possible. From illuminating dark rooms to powering plants through photosynthesis, light waves carry massive amounts of energy across space.',
+        subject: 'physics',
+        modelType: '', // Parent topic
+        funFact: 'Sunlight takes about 8 minutes and 20 seconds to travel all the way from the Sun to Earth.',
+        subTopics: [
+          {
+            id: 'light-rays',
+            title: 'Light Rays',
+            description: 'A light ray is an idealized model of light, drawn as a straight line indicating the path of energy propagation. Explore the emitter below to discover how light inherently travels through the vacuum of space.',
+            modelType: 'light-ray',
+            funFact: 'Nothing in the universe can travel faster than the speed of light in a vacuum!'
+          }
+        ]
       }
     ]
   },
@@ -186,6 +203,22 @@ export const magnetInteractionObjects = [
       'Like Poles Clash: This time, the North pole of Magnet A directly faces the North pole of Magnet B. Like poles violently repel each other.',
       'Magnetic Field Conflict: Examine the magnetic field lines! Because magnetic field lines always flow OUT of the North pole, they violently clash in the middle, squishing together and pushing actively against each other.',
       'Force of Repulsion: The resulting energetic tension creates an invisible wall of force that physically shoves Magnet B backward!'
+    ]
+  }
+];
+
+export const lightRayObjects = [
+  {
+    id: 'laser-ray',
+    label: 'Laser Ray Emission',
+    modelType: 'light-ray',
+    isMagnetic: false,
+    description: 'A functional diagram representing the path and speed of emitted light.',
+    annotations: [
+      'The Source: All light originates from a source. This high-powered emitter produces an intensely concentrated beam.',
+      'Rectilinear Propagation: See the path? Light inherently travels in perfectly straight lines. It will never curve or bend on its own unless it strikes matter or enters a separate medium like water/glass.',
+      'Infinity: Unlike physical projectiles (like a tossed ball) which eventually slow down and fall, a light ray traveling through empty space will keep propagating straight ahead forever.',
+      'Speed of Light: Light rays are the fastest moving entity in the universe, rocketing at a staggering 299,792,458 meters per second in a vacuum!'
     ]
   }
 ];
