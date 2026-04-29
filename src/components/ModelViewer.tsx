@@ -3,11 +3,17 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Stars, useGLTF, useAnimations, Ring, Billboard, Line, Text } from '@react-three/drei';
 import { XR, createXRStore, useXRHitTest, IfInSessionMode, useXR } from '@react-three/xr';
 import { Group, Matrix4, Vector3, Quaternion, Euler, Box3 } from 'three';
-import { magneticObjects, magnetInteractionObjects, lightRayObjects, reflectionObjects } from '../data/mockData';
+import { magneticObjects, magnetInteractionObjects, lightRayObjects, reflectionObjects, prismRefractionObjects, motionObjects } from '../data/mockData';
 import { SolenoidModel } from './SolenoidModel';
 import { InteractionModel } from './InteractionModel';
 import { LightRayModel } from './LightRayModel';
 import { ReflectionModel } from './ReflectionModel';
+import { PrismRefractionModel } from './PrismRefractionModel';
+import { DistanceDisplacementModel } from './DistanceDisplacementModel';
+import { SpeedVelocityModel } from './SpeedVelocityModel';
+import { UniformNonUniformModel } from './UniformNonUniformModel';
+import { AccelerationModel } from './AccelerationModel';
+import { MotionGraphModel } from './MotionGraphModel';
 
 const store = createXRStore();
 
@@ -189,7 +195,7 @@ function ARPlacedModel({ children }: { children: React.ReactNode }) {
 // ─── AR annotation wrapper (Renders Billboard above the placed model) ─────────
 function ARAnnotatedModel({ modelType, currentSlide, setCurrentSlide, handleReplayAudio, children }: { modelType: string, currentSlide: number, setCurrentSlide: any, handleReplayAudio?: () => void, children: React.ReactNode }) {
   const objectData = useMemo(() => {
-    const obj = [...magneticObjects, ...magnetInteractionObjects, ...lightRayObjects, ...reflectionObjects].find(o => o.modelType === modelType);
+    const obj = [...magneticObjects, ...magnetInteractionObjects, ...lightRayObjects, ...reflectionObjects, ...prismRefractionObjects, ...motionObjects].find(o => o.modelType === modelType);
     return obj;
   }, [modelType]);
   const CARD_HEIGHT = 0.40;
@@ -236,11 +242,11 @@ function ARAnnotatedModel({ modelType, currentSlide, setCurrentSlide, handleRepl
             {/* Colored Border */}
            <Line
              points={[[-0.325, 0.20, 0], [0.325, 0.20, 0], [0.325, -0.20, 0], [-0.325, -0.20, 0], [-0.325, 0.20, 0]]}
-             color={(objectData as any).isMagnetic === false ? ((modelType === 'light-ray' || modelType === 'reflection') ? "#ffcc00" : "#ff4d4d") : "#00c878"}
+             color={(objectData as any).isMagnetic === false ? ((modelType === 'light-ray' || modelType === 'reflection' || modelType === 'prism') ? "#ffcc00" : "#ff4d4d") : "#00c878"}
              lineWidth={3}
            />
-           <Text position={[0, 0.14, 0]} fontSize={0.045} color={(objectData as any).isMagnetic === false ? ((modelType === 'light-ray' || modelType === 'reflection') ? "#ffcc00" : "#ff4d4d") : "#00c878"} anchorX="center" fontWeight="bold">
-             {(modelType === 'light-ray' || modelType === 'reflection') ? "OPTICS" : ((objectData as any).isMagnetic ? "MAGNETIC" : "NON-MAGNETIC")}
+           <Text position={[0, 0.14, 0]} fontSize={0.045} color={(objectData as any).isMagnetic === false ? ((modelType === 'light-ray' || modelType === 'reflection' || modelType === 'prism') ? "#ffcc00" : "#ff4d4d") : "#00c878"} anchorX="center" fontWeight="bold">
+             {(modelType === 'light-ray' || modelType === 'reflection' || modelType === 'prism') ? "OPTICS" : ((objectData as any).isMagnetic ? "MAGNETIC" : "NON-MAGNETIC")}
            </Text>
            <Text position={[0, 0.08, 0]} fontSize={0.055} color="#ffffff" anchorX="center" fontWeight="bold">
              {objectData.label}
@@ -468,6 +474,7 @@ useGLTF.preload('/wood/scene.gltf');
 // ─── Helper: y-offset for non-AR display ─────────────────────────────────────
 function yOffset(modelType: string) {
   if (modelType === 'electromagnetism') return -0.5;
+  if (['distance-displacement', 'speed-velocity', 'uniform-nonuniform', 'acceleration', 'motion-graphs'].includes(modelType)) return 0.5;
   return modelType === 'solar-system' ? 0 : 1.0;
 }
 
@@ -478,6 +485,12 @@ function SceneModel({ modelType, currentSlide = 0 }: { modelType: string, curren
   if (modelType === 'repulsion') return <InteractionModel type="repulsion" currentSlide={currentSlide} />;
   if (modelType === 'light-ray') return <LightRayModel currentSlide={currentSlide} />;
   if (modelType === 'reflection') return <ReflectionModel currentSlide={currentSlide} />;
+  if (modelType === 'prism') return <PrismRefractionModel currentSlide={currentSlide} />;
+  if (modelType === 'distance-displacement') return <DistanceDisplacementModel currentSlide={currentSlide} />;
+  if (modelType === 'speed-velocity') return <SpeedVelocityModel currentSlide={currentSlide} />;
+  if (modelType === 'uniform-nonuniform') return <UniformNonUniformModel currentSlide={currentSlide} />;
+  if (modelType === 'acceleration') return <AccelerationModel currentSlide={currentSlide} />;
+  if (modelType === 'motion-graphs') return <MotionGraphModel currentSlide={currentSlide} />;
   if (modelType === 'solar-system') return <SolarSystemModel />;
   if (modelType === 'atom') return <AtomModel />;
   if (modelType === 'h2o') return <WaterMoleculeModel />;
@@ -498,8 +511,10 @@ export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
   const isInteraction = modelType === 'attraction' || modelType === 'repulsion';
   const isLight = modelType === 'light-ray';
   const isReflection = modelType === 'reflection';
+  const isPrism = modelType === 'prism';
+  const isMotion = ['distance-displacement', 'speed-velocity', 'uniform-nonuniform', 'acceleration', 'motion-graphs'].includes(modelType);
 
-  const magneticObj = useMemo(() => [...magneticObjects, ...magnetInteractionObjects, ...lightRayObjects, ...reflectionObjects].find(o => o.modelType === modelType) as any, [modelType]);
+  const magneticObj = useMemo(() => [...magneticObjects, ...magnetInteractionObjects, ...lightRayObjects, ...reflectionObjects, ...prismRefractionObjects, ...motionObjects].find(o => o.modelType === modelType) as any, [modelType]);
   const hasAnnotations = !!(magneticObj && magneticObj.annotations && magneticObj.annotations.length > 0);
   
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -624,7 +639,7 @@ export const ModelViewer: React.FC<{ modelType: string }> = ({ modelType }) => {
           {/* ── Outside AR: fixed position, orbit controls ── */}
           <IfInSessionMode deny="immersive-ar">
             <OrbitControls
-              autoRotate={!isSolar && !isMagnet && !isSolenoid && !isInteraction && !isLight && !isReflection}
+              autoRotate={!isSolar && !isMagnet && !isSolenoid && !isInteraction && !isLight && !isReflection && !isPrism && !isMotion}
               autoRotateSpeed={0.5}
               enablePan={false}
               minDistance={0.5}
